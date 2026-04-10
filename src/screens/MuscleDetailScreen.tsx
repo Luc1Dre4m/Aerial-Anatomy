@@ -176,6 +176,8 @@ const styles = StyleSheet.create({
   regionBadge: {
     backgroundColor: colors.bg.tertiary,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },

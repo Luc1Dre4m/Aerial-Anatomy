@@ -141,12 +141,17 @@ const styles = StyleSheet.create({
   searchInput: {
     backgroundColor: colors.bg.secondary,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     color: colors.text.primary,
     ...typography.body.regular,
+    shadowColor: colors.accent.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   filtersScroll: {
     flexGrow: 0,
@@ -167,6 +172,11 @@ const styles = StyleSheet.create({
   filterChipActive: {
     backgroundColor: colors.accent.primary,
     borderColor: colors.accent.primary,
+    shadowColor: colors.accent.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   filterText: {
     ...typography.body.small,

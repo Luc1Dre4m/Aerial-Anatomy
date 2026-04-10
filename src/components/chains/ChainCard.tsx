@@ -19,6 +19,7 @@ export function ChainCard({ chain, onPress }: ChainCardProps) {
 
   return (
     <AnimatedPressable onPress={onPress} style={styles.card}>
+      <View style={styles.glassOverlay} />
       {isExclusive && (
         <View style={[styles.exclusiveBadge, { backgroundColor: chain.color }]}>
           <Text style={styles.exclusiveText}>
@@ -63,11 +64,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.secondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glass.border,
     padding: spacing.lg,
     gap: spacing.md,
     overflow: 'hidden',
     ...shadows.md,
+  },
+  glassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.glass.light,
   },
   exclusiveBadge: {
     position: 'absolute',

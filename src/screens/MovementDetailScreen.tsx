@@ -231,7 +231,7 @@ export function MovementDetailScreen() {
             <>
               <GradientDivider />
               <Section title={t('spotting.title')}>
-                <View style={{ backgroundColor: colors.bg.secondary, borderRadius: 12, padding: spacing.lg, gap: spacing.md }}>
+                <View style={{ backgroundColor: colors.bg.secondary, borderRadius: 12, borderWidth: 1, borderColor: colors.glass.border, padding: spacing.lg, gap: spacing.md }}>
                   <Text style={{ ...typography.body.regular, color: colors.text.primary, lineHeight: 22 }}>
                     {lang === 'es' ? spotting.technique_es : spotting.technique_en}
                   </Text>
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glass.border,
     borderRadius: 12,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
@@ -392,6 +392,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.bg.secondary,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     minHeight: 44,
@@ -403,6 +405,8 @@ const styles = StyleSheet.create({
   variationItem: {
     backgroundColor: colors.bg.secondary,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     padding: spacing.lg,
     gap: spacing.xs,
   },

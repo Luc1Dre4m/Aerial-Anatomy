@@ -1,5 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Animated } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -96,6 +96,57 @@ function EstudioStack() {
   );
 }
 
+function TabIcon({ name, size, color, focused }: {
+  name: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  size: number;
+  color: string;
+  focused: boolean;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (focused) {
+      Animated.spring(scale, {
+        toValue: 1.15,
+        friction: 5,
+        tension: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [focused, scale]);
+
+  return (
+    <Animated.View style={{ alignItems: 'center', transform: [{ scale }] }}>
+      {focused && (
+        <View style={{
+          position: 'absolute',
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: `${colors.accent.primary}15`,
+          top: -4,
+        }} />
+      )}
+      <MaterialCommunityIcons name={name} size={size} color={color} />
+      {focused && (
+        <View style={{
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: colors.accent.primary,
+          marginTop: 2,
+        }} />
+      )}
+    </Animated.View>
+  );
+}
+
 export function BottomTabNavigator() {
   const { t } = useTranslation();
 
@@ -104,32 +155,12 @@ export function BottomTabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size, focused }) => (
-          <View style={{ alignItems: 'center' }}>
-            {focused && (
-              <View style={{
-                position: 'absolute',
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: `${colors.accent.primary}15`,
-                top: -4,
-              }} />
-            )}
-            <MaterialCommunityIcons
-              name={TAB_ICONS[route.name] ?? 'help-circle'}
-              size={size}
-              color={color}
-            />
-            {focused && (
-              <View style={{
-                width: 4,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: colors.accent.primary,
-                marginTop: 2,
-              }} />
-            )}
-          </View>
+          <TabIcon
+            name={TAB_ICONS[route.name] ?? 'help-circle'}
+            size={size}
+            color={color}
+            focused={focused}
+          />
         ),
         tabBarActiveTintColor: colors.accent.primary,
         tabBarInactiveTintColor: colors.text.muted,

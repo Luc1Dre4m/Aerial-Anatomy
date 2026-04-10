@@ -21,6 +21,7 @@ export function MuscleCard({ muscle, onPress }: MuscleCardProps) {
 
   return (
     <AnimatedPressable onPress={onPress} style={styles.card}>
+      <View style={styles.glassOverlay} />
       <View style={styles.header}>
         <Text style={styles.name} numberOfLines={1}>{name}</Text>
         <View style={styles.regionBadge}>
@@ -46,10 +47,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.secondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glass.border,
     padding: spacing.lg,
     gap: spacing.sm,
+    overflow: 'hidden',
     ...shadows.md,
+  },
+  glassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.glass.light,
   },
   header: {
     flexDirection: 'row',
