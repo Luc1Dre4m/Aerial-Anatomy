@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Muscle } from '../../utils/types';
 import { REGION_LABELS } from '../../data/muscles';
@@ -13,22 +13,59 @@ export function FlashCard({ muscle }: FlashCardProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
   const [flipped, setFlipped] = useState(false);
+  const flipAnim = useRef(new Animated.Value(0)).current;
 
   const name = lang === 'es' ? muscle.name_es : muscle.name_en;
   const otherName = lang === 'es' ? muscle.name_en : muscle.name_es;
   const func = lang === 'es' ? muscle.primary_function_es : muscle.primary_function_en;
   const regionLabel = REGION_LABELS[muscle.region][lang];
 
+  const handleFlip = useCallback(() => {
+    const toValue = flipped ? 0 : 1;
+    setFlipped(!flipped);
+    Animated.timing(flipAnim, {
+      toValue,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [flipped, flipAnim]);
+
+  const frontRotateY = flipAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: ['0deg', '90deg', '180deg'],
+  });
+  const frontOpacity = flipAnim.interpolate({
+    inputRange: [0, 0.49, 0.5, 1],
+    outputRange: [1, 1, 0, 0],
+  });
+  const backRotateY = flipAnim.interpolate({
+    inputRange: [0, 0.5, 0.51, 1],
+    outputRange: ['180deg', '90deg', '90deg', '0deg'],
+  });
+  const backOpacity = flipAnim.interpolate({
+    inputRange: [0, 0.5, 0.51, 1],
+    outputRange: [0, 0, 1, 1],
+  });
+
   return (
     <TouchableOpacity
-      onPress={() => setFlipped(!flipped)}
-      style={[styles.card, flipped && styles.cardFlipped]}
-      activeOpacity={0.9}
+      onPress={handleFlip}
+      style={styles.cardContainer}
+      activeOpacity={0.95}
       accessibilityRole="button"
       accessibilityLabel={t('study.flipToReveal')}
     >
-      {!flipped ? (
-        // FRONT - Question
+      {/* Front face */}
+      <Animated.View
+        style={[
+          styles.card,
+          {
+            opacity: frontOpacity,
+            transform: [{ perspective: 1000 }, { rotateY: frontRotateY }],
+          },
+        ]}
+      >
+        <View style={styles.glassOverlay} />
         <View style={styles.face}>
           <Text style={styles.label}>{t('study.whatIs')}</Text>
           <Text style={styles.latin}>{muscle.name_latin}</Text>
@@ -46,8 +83,21 @@ export function FlashCard({ muscle }: FlashCardProps) {
           </View>
           <Text style={styles.tapHint}>{t('study.flipToReveal')}</Text>
         </View>
-      ) : (
-        // BACK - Answer
+      </Animated.View>
+
+      {/* Back face */}
+      <Animated.View
+        style={[
+          styles.card,
+          styles.cardBack,
+          StyleSheet.absoluteFillObject,
+          {
+            opacity: backOpacity,
+            transform: [{ perspective: 1000 }, { rotateY: backRotateY }],
+          },
+        ]}
+      >
+        <View style={styles.glassOverlay} />
         <View style={styles.face}>
           <Text style={styles.answerName}>{name}</Text>
           <Text style={styles.answerOther}>{otherName}</Text>
@@ -66,24 +116,37 @@ export function FlashCard({ muscle }: FlashCardProps) {
 
           <Text style={styles.tapHint}>{t('study.flipToReveal')}</Text>
         </View>
-      )}
+      </Animated.View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
+  cardContainer: {
+    height: 320,
+  },
   card: {
     backgroundColor: colors.bg.secondary,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glass.border,
     minHeight: 320,
     justifyContent: 'center',
+    overflow: 'hidden',
     ...shadows.lg,
+    backfaceVisibility: 'hidden',
   },
-  cardFlipped: {
+  cardBack: {
     backgroundColor: colors.bg.tertiary,
     borderColor: colors.accent.muted,
+  },
+  glassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.glass.light,
   },
   face: {
     padding: spacing.xl,

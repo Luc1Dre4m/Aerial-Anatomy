@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Animated, Easing, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -48,6 +48,44 @@ export function EstudioScreen() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [quizTotal, setQuizTotal] = useState(QUIZ_COUNT);
+
+  // Staggered entrance animation for menu cards
+  const MENU_CARD_COUNT = 8;
+  const cardAnims = useRef(
+    Array.from({ length: MENU_CARD_COUNT }, () => new Animated.Value(0))
+  ).current;
+
+  useEffect(() => {
+    if (mode === 'menu') {
+      cardAnims.forEach((a) => a.setValue(0));
+      Animated.stagger(
+        70,
+        cardAnims.map((anim) =>
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          })
+        )
+      ).start();
+    }
+  }, [mode]);
+
+  // Animated quiz progress bar
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (mode === 'quiz') {
+      Animated.timing(progressAnim, {
+        toValue: (quizIndex + 1) / QUIZ_COUNT,
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+    } else {
+      progressAnim.setValue(0);
+    }
+  }, [quizIndex, mode]);
 
   const sr = useSpacedRepetition(muscles);
   const shuffledMuscles = useMemo(() => shuffle(muscles), [mode]);
@@ -99,101 +137,39 @@ export function EstudioScreen() {
           <Text style={styles.subtitle}>{t('screens.estudio.description')}</Text>
 
           <View style={styles.modeCards}>
-            <TouchableOpacity
-              style={styles.modeCard}
-              onPress={() => setMode('flashcards')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>🃏</Text>
-              <Text style={styles.modeTitle}>{t('study.flashcards')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('study.musclesToReview', { count: muscles.length })}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modeCard}
-              onPress={() => { setScore(0); setQuizIndex(0); setSelectedAnswer(null); setMode('quiz'); }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>🧠</Text>
-              <Text style={styles.modeTitle}>{t('study.quiz')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('study.randomQuestions', { count: QUIZ_COUNT })}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modeCard}
-              onPress={() => setMode('spaced')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>📊</Text>
-              <Text style={styles.modeTitle}>{t('study.spacedRepetition')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('study.dueCards', { count: sr.dueCount })}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modeCard}
-              onPress={() => setMode('favorites')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>❤️</Text>
-              <Text style={styles.modeTitle}>{t('favorites.title')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('study.saved', { count: favMuscles.length + favMovements.length })}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modeCard}
-              onPress={() => setMode('bodyQuiz')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>🫀</Text>
-              <Text style={styles.modeTitle}>{t('study.bodyQuiz')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('study.locateMuscles')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modeCard}
-              onPress={() => navigation.navigate('TrainingLog')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>📓</Text>
-              <Text style={styles.modeTitle}>{t('training.log')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('study.logSessions')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modeCard, { borderColor: colors.accent.primary, borderWidth: 1 }]}
-              onPress={() => navigation.navigate('PoseAnalysis')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>📸</Text>
-              <Text style={styles.modeTitle}>{t('features.poseDetectionTitle')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('features.poseDetectionDescription')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modeCard, { borderColor: colors.accent.secondary, borderWidth: 1 }]}
-              onPress={() => navigation.navigate('PoseAnalysis')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.modeIcon}>🏋️</Text>
-              <Text style={styles.modeTitle}>{t('features.motionAnalysisTitle')}</Text>
-              <Text style={styles.modeDesc}>
-                {t('features.motionAnalysisDescription')}
-              </Text>
-            </TouchableOpacity>
+            {[
+              { icon: '🃏', title: t('study.flashcards'), desc: t('study.musclesToReview', { count: muscles.length }), action: () => setMode('flashcards') },
+              { icon: '🧠', title: t('study.quiz'), desc: t('study.randomQuestions', { count: QUIZ_COUNT }), action: () => { setScore(0); setQuizIndex(0); setSelectedAnswer(null); setMode('quiz'); } },
+              { icon: '📊', title: t('study.spacedRepetition'), desc: t('study.dueCards', { count: sr.dueCount }), action: () => setMode('spaced') },
+              { icon: '❤️', title: t('favorites.title'), desc: t('study.saved', { count: favMuscles.length + favMovements.length }), action: () => setMode('favorites') },
+              { icon: '🫀', title: t('study.bodyQuiz'), desc: t('study.locateMuscles'), action: () => setMode('bodyQuiz') },
+              { icon: '📓', title: t('training.log'), desc: t('study.logSessions'), action: () => navigation.navigate('TrainingLog') },
+              { icon: '📸', title: t('features.poseDetectionTitle'), desc: t('features.poseDetectionDescription'), action: () => navigation.navigate('PoseAnalysis'), extraStyle: { borderColor: colors.accent.primary, borderWidth: 1 } },
+              { icon: '🏋️', title: t('features.motionAnalysisTitle'), desc: t('features.motionAnalysisDescription'), action: () => navigation.navigate('PoseAnalysis'), extraStyle: { borderColor: colors.accent.secondary, borderWidth: 1 } },
+            ].map((card, idx) => (
+              <Animated.View
+                key={idx}
+                style={{
+                  opacity: cardAnims[idx],
+                  transform: [{
+                    translateY: cardAnims[idx].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [24, 0],
+                    }),
+                  }],
+                }}
+              >
+                <TouchableOpacity
+                  style={[styles.modeCard, card.extraStyle]}
+                  onPress={card.action}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modeIcon}>{card.icon}</Text>
+                  <Text style={styles.modeTitle}>{card.title}</Text>
+                  <Text style={styles.modeDesc}>{card.desc}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            ))}
           </View>
 
           <AuthorCredit />
@@ -256,7 +232,12 @@ export function EstudioScreen() {
 
         {/* Progress bar */}
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${((quizIndex + 1) / QUIZ_COUNT) * 100}%` }]} />
+          <Animated.View style={[styles.progressFill, {
+            width: progressAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0%', '100%'],
+            }),
+          }]} />
         </View>
 
         <ScrollView contentContainerStyle={styles.cardContent} showsVerticalScrollIndicator={false}>
@@ -509,10 +490,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.secondary,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.glass.border,
     padding: spacing.xl,
     alignItems: 'center',
     gap: spacing.md,
+    overflow: 'hidden',
   },
   modeIcon: {
     fontSize: 40,
@@ -615,14 +597,20 @@ const styles = StyleSheet.create({
     color: colors.accent.light,
   },
   scoreCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 4,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 5,
     borderColor: colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
+    backgroundColor: colors.accent.glow,
+    shadowColor: colors.accent.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   scoreNumber: {
     ...typography.heading.h1,

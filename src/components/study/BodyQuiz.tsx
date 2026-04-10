@@ -54,7 +54,7 @@ export function BodyQuiz({ onFinish }: BodyQuizProps) {
       setSelectedRegion(null);
       setShowResult(false);
     }
-  }, [questionIndex, score, isCorrect, onFinish]);
+  }, [questionIndex, score, onFinish]);
 
   if (isFinished || !currentMuscle) return null;
 

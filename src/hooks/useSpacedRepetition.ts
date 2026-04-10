@@ -114,7 +114,7 @@ export function useSpacedRepetition(allMuscles: Muscle[]): SpacedRepetitionResul
       ...(quality === 2 ? { good: prev.good + 1 } : {}),
       ...(quality === 3 ? { easy: prev.easy + 1 } : {}),
     }));
-  }, [currentCard, cardStates]);
+  }, [currentCard]);
 
   return {
     currentCard,

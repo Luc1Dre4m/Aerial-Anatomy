@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Animated, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { FormScore } from '../../services/motionAnalysis';
@@ -39,16 +39,48 @@ export function FormScoreCard({
   const overallColor = getScoreColor(score.overall);
   const durationSec = Math.round(duration / 1000);
 
+  // Score reveal animations
+  const ringScale = useRef(new Animated.Value(0.8)).current;
+  const ringOpacity = useRef(new Animated.Value(0)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const numberAnim = useRef(new Animated.Value(0)).current;
+  const [displayNumber, setDisplayNumber] = useState(0);
+
+  useEffect(() => {
+    // Ring entrance
+    Animated.parallel([
+      Animated.timing(ringOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.spring(ringScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }),
+    ]).start();
+
+    // Number counter
+    const listener = numberAnim.addListener(({ value }) => setDisplayNumber(Math.round(value)));
+    Animated.sequence([
+      Animated.delay(250),
+      Animated.timing(numberAnim, { toValue: score.overall, duration: 800, useNativeDriver: false }),
+    ]).start(() => {
+      Animated.timing(contentOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    });
+
+    return () => numberAnim.removeListener(listener);
+  }, [score.overall]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{movementName}</Text>
 
-      {/* Overall score ring */}
-      <View style={[styles.scoreRing, { borderColor: overallColor }]}>
-        <Text style={[styles.scoreNumber, { color: overallColor }]}>{score.overall}</Text>
+      {/* Overall score ring with animation */}
+      <Animated.View style={[
+        styles.scoreRing,
+        { borderColor: overallColor },
+        { opacity: ringOpacity, transform: [{ scale: ringScale }] },
+      ]}>
+        <Text style={[styles.scoreNumber, { color: overallColor }]}>{displayNumber}</Text>
         <Text style={styles.scoreLabel}>{t(getScoreKey(score.overall))}</Text>
-      </View>
+      </Animated.View>
 
+      {/* Content fades in after number counter */}
+      <Animated.View style={{ opacity: contentOpacity, width: '100%', alignItems: 'center', gap: spacing.lg }}>
       {/* Duration */}
       <View style={styles.durationRow}>
         <MaterialCommunityIcons name="timer-outline" size={16} color={colors.text.muted} />
@@ -118,6 +150,7 @@ export function FormScoreCard({
           <Text style={styles.dismissBtnText}>{t('study.mode')}</Text>
         </TouchableOpacity>
       </View>
+      </Animated.View>
     </View>
   );
 }
@@ -139,13 +172,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   scoreRing: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 5,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+    backgroundColor: colors.accent.glow,
+    shadowColor: colors.accent.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
   scoreNumber: {
     ...typography.heading.h1,

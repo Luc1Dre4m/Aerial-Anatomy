@@ -85,7 +85,8 @@ export function PoseAnalysisScreen() {
   }, [analysisMode, clearIntervals]);
 
   const checkPermission = useCallback(async () => {
-    const granted = await initPoseDetection();
+    const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000));
+    const granted = await Promise.race([initPoseDetection(), timeout]);
     setPermissionStatus(granted ? 'granted' : 'denied');
   }, []);
 

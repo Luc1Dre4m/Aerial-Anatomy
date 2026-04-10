@@ -4,6 +4,7 @@ export const colors = {
     secondary: '#1A1A2E',
     tertiary: '#2A2A44',
     surface: '#0A0A16',
+    elevated: '#232340',
   },
 
   accent: {
@@ -12,6 +13,7 @@ export const colors = {
     light: '#E0D0FF',
     muted: '#6A5A8A',
     glow: '#9B6DFF30',
+    glowStrong: '#9B6DFF50',
   },
 
   text: {
@@ -19,6 +21,13 @@ export const colors = {
     secondary: '#A89BC0',
     muted: '#7A7A8E',
     white: '#FFFFFF',
+    disabled: '#5A5A70',
+  },
+
+  glass: {
+    light: 'rgba(255, 255, 255, 0.05)',
+    accent: 'rgba(155, 109, 255, 0.08)',
+    border: 'rgba(255, 255, 255, 0.1)',
   },
 
   muscle: {
