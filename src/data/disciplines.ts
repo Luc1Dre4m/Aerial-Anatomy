@@ -1,0 +1,81 @@
+import { Discipline } from '../utils/types';
+import { colors } from '../theme';
+
+export const disciplines: Discipline[] = [
+  {
+    id: 'tela',
+    name_es: 'Tela Aerea',
+    name_en: 'Aerial Silks',
+    description_es: 'Dos tiras de tela suspendidas donde se realizan figuras, subidas y caidas.',
+    description_en: 'Two suspended fabric strips for figures, climbs, and drops.',
+    apparatus_es: 'Tela de licra o seda de 8-10m',
+    apparatus_en: 'Lycra or silk fabric, 8-10m',
+    icon: 'curtains',
+    color: colors.discipline.tela,
+    difficulty_range: [1, 5],
+  },
+  {
+    id: 'aro_lira',
+    name_es: 'Aro / Lira',
+    name_en: 'Aerial Hoop / Lyra',
+    description_es: 'Aro metalico circular suspendido para figuras estaticas y dinamicas.',
+    description_en: 'Circular metal hoop suspended for static and dynamic figures.',
+    apparatus_es: 'Aro de acero o aluminio, 80-100cm diametro',
+    apparatus_en: 'Steel or aluminum hoop, 80-100cm diameter',
+    icon: 'circle-outline',
+    color: colors.discipline.aro_lira,
+    difficulty_range: [1, 5],
+  },
+  {
+    id: 'trapecio_fijo',
+    name_es: 'Trapecio Fijo',
+    name_en: 'Static Trapeze',
+    description_es: 'Barra horizontal suspendida por dos cuerdas para figuras y balances.',
+    description_en: 'Horizontal bar suspended by two ropes for figures and balances.',
+    apparatus_es: 'Barra de acero 60-80cm con cuerdas',
+    apparatus_en: 'Steel bar 60-80cm with ropes',
+    icon: 'minus',
+    color: colors.discipline.trapecio,
+    difficulty_range: [1, 5],
+  },
+  {
+    id: 'cuerda_lisa',
+    name_es: 'Cuerda Lisa',
+    name_en: 'Aerial Rope',
+    description_es: 'Cuerda vertical unica para subidas, figuras y descensos.',
+    description_en: 'Single vertical rope for climbs, figures, and descents.',
+    apparatus_es: 'Cuerda de algodon o sintetica, 6-10m',
+    apparatus_en: 'Cotton or synthetic rope, 6-10m',
+    icon: 'arrow-up-bold',
+    color: colors.discipline.cuerda,
+    difficulty_range: [1, 5],
+  },
+  {
+    id: 'straps',
+    name_es: 'Straps',
+    name_en: 'Aerial Straps',
+    description_es: 'Dos cintas con loops para las munecas. Disciplina de maxima fuerza.',
+    description_en: 'Two straps with wrist loops. Maximum strength discipline.',
+    apparatus_es: 'Cintas de nylon con loops, 4-6m',
+    apparatus_en: 'Nylon straps with loops, 4-6m',
+    icon: 'arrow-down-bold-outline',
+    color: colors.discipline.straps,
+    difficulty_range: [2, 5],
+  },
+  {
+    id: 'trapecio_volante',
+    name_es: 'Trapecio Volante',
+    name_en: 'Flying Trapeze',
+    description_es: 'Trapecio en movimiento con vuelos, saltos y catches.',
+    description_en: 'Moving trapeze with flights, jumps, and catches.',
+    apparatus_es: 'Estructura completa con plataforma, red y trapecio',
+    apparatus_en: 'Full rig with platform, net, and trapeze',
+    icon: 'airplane',
+    color: colors.discipline.volante,
+    difficulty_range: [2, 5],
+  },
+];
+
+export function getDisciplineById(id: string): Discipline | undefined {
+  return disciplines.find((d) => d.id === id);
+}
