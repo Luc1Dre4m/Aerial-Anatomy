@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LanguageToggle, AuthorCredit, GlobalSearch } from '../components/ui';
 import { MuscleOfTheDay } from '../components/ui/MuscleOfTheDay';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { BodyMap } from '../components/body/BodyMap';
 import { MuscleTooltip } from '../components/body/MuscleTooltip';
 import { Anatomy3DViewer } from '../components/body/Anatomy3DViewer';
@@ -130,13 +131,15 @@ export function CuerpoScreen() {
 
       <View style={styles.bodyContainer} {...(viewMode === '2d' ? panResponder.panHandlers : {})}>
         {viewMode === '3d' ? (
-          <Anatomy3DViewer
-            highlightedMuscles={tooltipMuscleId ? [tooltipMuscleId] : []}
-            onMuscleSelect={(muscleId) => {
-              setSelectedRegion(null);
-              setTooltipMuscleId(muscleId);
-            }}
-          />
+          <ErrorBoundary>
+            <Anatomy3DViewer
+              highlightedMuscles={tooltipMuscleId ? [tooltipMuscleId] : []}
+              onMuscleSelect={(muscleId) => {
+                setSelectedRegion(null);
+                setTooltipMuscleId(muscleId);
+              }}
+            />
+          </ErrorBoundary>
         ) : (
           <>
             {/* Front face */}

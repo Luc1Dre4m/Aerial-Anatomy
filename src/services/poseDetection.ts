@@ -60,7 +60,7 @@ export const LANDMARK_TO_MUSCLE_MAP: Record<string, string[]> = {
   // Upper arms (landmarks 11-13, 12-14)
   'upper_arm': ['m_biceps', 'm_triceps', 'm_deltoides'],
   // Forearms (landmarks 13-15, 14-16)
-  'forearm': ['m_flexores_antebrazo', 'm_extensores_antebrazo'],
+  'forearm': ['m_flexores_antebrazo', 'm_extensores_muneca'],
   // Wrists (landmarks 15-22)
   'wrist': ['m_flexores_antebrazo'],
   // Torso (landmarks 11, 12, 23, 24)
@@ -71,7 +71,7 @@ export const LANDMARK_TO_MUSCLE_MAP: Record<string, string[]> = {
   // Thighs (landmarks 23-25, 24-26)
   'thigh': ['m_cuadriceps', 'm_isquiotibiales', 'm_aductores'],
   // Lower legs (landmarks 25-27, 26-28)
-  'lower_leg': ['m_gastrocnemio', 'm_tibial_anterior'],
+  'lower_leg': ['m_gemelos', 'm_tibial_anterior'],
 };
 
 // ── Landmark group definitions ──

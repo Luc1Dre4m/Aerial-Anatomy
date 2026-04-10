@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 6,
-    minHeight: 36,
+    minHeight: 44,
     justifyContent: 'center',
   },
   modeBtnActive: {
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 6,
-    minHeight: 36,
+    minHeight: 44,
     justifyContent: 'center',
   },
   bodyBtnActive: {

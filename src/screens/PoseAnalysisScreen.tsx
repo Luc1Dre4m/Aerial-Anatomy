@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, ScrollView, BackHandler, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -49,17 +49,40 @@ export function PoseAnalysisScreen() {
   const [formScore, setFormScore] = useState<FormScore | null>(null);
   const [recordingStart, setRecordingStart] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const analysisIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearIntervals = useCallback(() => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     checkPermission();
     return () => {
       setIsActive(false);
       reset();
-      if (countdownRef.current) clearInterval(countdownRef.current);
-      if (analysisIntervalRef.current) clearInterval(analysisIntervalRef.current);
+      clearIntervals();
     };
   }, []);
+
+  // Deactivate camera when not needed (saves battery/CPU)
+  useEffect(() => {
+    setIsActive(analysisMode === 'detect' || analysisMode === 'recording');
+  }, [analysisMode]);
+
+  // BackHandler for Android hardware back in overlay modes
+  useEffect(() => {
+    if (analysisMode !== 'selectMovement' && analysisMode !== 'countdown') return;
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      clearIntervals();
+      setAnalysisMode('detect');
+      setSelectedMovement(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [analysisMode, clearIntervals]);
 
   const checkPermission = useCallback(async () => {
     const granted = await initPoseDetection();
@@ -76,6 +99,7 @@ export function PoseAnalysisScreen() {
   }, [flags.motionAnalysis, navigation]);
 
   const handleSelectMovement = useCallback((mv: Movement) => {
+    clearIntervals();
     setSelectedMovement(mv);
     setCountdown(3);
     setAnalysisMode('countdown');
@@ -91,14 +115,9 @@ export function PoseAnalysisScreen() {
         countdownRef.current = null;
         setAnalysisMode('recording');
         setRecordingStart(Date.now());
-
-        // Start periodic analysis
-        analysisIntervalRef.current = setInterval(() => {
-          // Analysis happens in the render cycle via effect below
-        }, 500);
       }
     }, 1000);
-  }, []);
+  }, [clearIntervals]);
 
   // Run analysis during recording
   useEffect(() => {
@@ -112,11 +131,6 @@ export function PoseAnalysisScreen() {
   }, [analysisMode, landmarks, selectedMovement]);
 
   const handleStopRecording = useCallback(() => {
-    if (analysisIntervalRef.current) {
-      clearInterval(analysisIntervalRef.current);
-      analysisIntervalRef.current = null;
-    }
-
     if (selectedMovement && phaseHistory.length > 0) {
       const score = calculateFormScore(phaseHistory, selectedMovement);
       setFormScore(score);

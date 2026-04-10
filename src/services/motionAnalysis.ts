@@ -6,7 +6,7 @@
  * feedback and scoring.
  */
 
-import { Movement, ExecutionPhase } from '../utils/types';
+import { Movement, ExecutionPhase, MotionSession } from '../utils/types';
 import { PoseLandmark } from './poseDetection';
 
 // ── Types ──
@@ -26,14 +26,7 @@ export interface PhaseAnalysis {
   breathingExpected: 'inhale' | 'exhale' | 'hold' | 'natural';
 }
 
-export interface MotionSession {
-  id: string;
-  date: string;
-  movementId: string;
-  overallScore: number;
-  phaseScores: number[];
-  duration: number;
-}
+export type { MotionSession };
 
 export interface FormScore {
   overall: number;
@@ -306,9 +299,11 @@ export function calculateFormScore(
     score: Math.round(data.total / data.count),
   }));
 
-  const overall = Math.round(
-    phaseScores.reduce((sum, ps) => sum + ps.score, 0) / phaseScores.length
-  );
+  const overall = phaseScores.length > 0
+    ? Math.round(
+        phaseScores.reduce((sum, ps) => sum + ps.score, 0) / phaseScores.length
+      )
+    : 0;
 
   return { overall, phaseScores, muscleScores };
 }

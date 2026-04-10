@@ -79,11 +79,13 @@ export function getBioDigitalInjectedJS(): string {
       // Listen for anatomy selection events from BioDigital widget
       if (window.HumanAPI) {
         window.HumanAPI.on('scene.picked', function(event) {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'anatomySelected',
-            objectId: event.objectId,
-            name: event.name
-          }));
+          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'anatomySelected',
+              objectId: event.objectId,
+              name: event.name
+            }));
+          }
         });
       }
 

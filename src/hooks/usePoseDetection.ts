@@ -73,7 +73,7 @@ export function usePoseDetection(): UsePoseDetectionResult {
         setError('pose.detecting');
       }
     },
-    [isDetecting]
+    []
   );
 
   const reset = useCallback(() => {

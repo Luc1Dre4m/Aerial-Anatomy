@@ -92,10 +92,10 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 28,
-    height: 28,
+    top: spacing.xs,
+    right: spacing.xs,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     ...typography.heading.h3,
     fontFamily: typography.heading.fontFamily,
     color: colors.accent.light,
-    paddingRight: 28,
+    paddingRight: 44,
   },
   latin: {
     ...typography.body.small,
