@@ -8,6 +8,8 @@ import { LanguageToggle, AuthorCredit, GlobalSearch } from '../components/ui';
 import { MuscleOfTheDay } from '../components/ui/MuscleOfTheDay';
 import { BodyMap } from '../components/body/BodyMap';
 import { MuscleTooltip } from '../components/body/MuscleTooltip';
+import { Anatomy3DViewer } from '../components/body/Anatomy3DViewer';
+import { ViewModeToggle } from '../components/body/ViewModeToggle';
 import { getMusclesByRegion, REGION_LABELS } from '../data/muscles';
 import { MuscleRegion } from '../utils/types';
 import { AnimatedTitle } from '../components/ui/AnimatedTitle';
@@ -17,6 +19,7 @@ export function CuerpoScreen() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
   const navigation = useNavigation<any>();
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [bodyView, setBodyView] = useState<'front' | 'back'>('front');
   const [selectedRegion, setSelectedRegion] = useState<MuscleRegion | null>(null);
   const [tooltipMuscleId, setTooltipMuscleId] = useState<string | null>(null);
@@ -118,80 +121,80 @@ export function CuerpoScreen() {
         <AnimatedTitle text={t('screens.cuerpo.title')} style={styles.title} />
       </View>
 
-      <View style={styles.viewToggle}>
-        <TouchableOpacity
-          onPress={() => flipTo('front')}
-          style={[styles.viewBtn, bodyView === 'front' && styles.viewBtnActive]}
-        >
-          <Text style={[styles.viewBtnText, bodyView === 'front' && styles.viewBtnTextActive]}>
-            {t('body.front')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => flipTo('back')}
-          style={[styles.viewBtn, bodyView === 'back' && styles.viewBtnActive]}
-        >
-          <Text style={[styles.viewBtnText, bodyView === 'back' && styles.viewBtnTextActive]}>
-            {t('body.back')}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <ViewModeToggle
+        viewMode={viewMode}
+        onChangeMode={setViewMode}
+        bodyView={bodyView}
+        onChangeBodyView={(target) => flipTo(target)}
+      />
 
-      <View style={styles.bodyContainer} {...panResponder.panHandlers}>
-        {/* Front face */}
-        <Animated.View style={[
-          styles.bodyFace,
-          { opacity: frontOpacity, transform: [{ perspective: 800 }, { rotateY: frontRotateY }] },
-        ]}>
-          <BodyMap
-            view="front"
-            highlightedRegion={bodyView === 'front' ? selectedRegion : null}
-            onRegionPress={(region) => {
-              if (bodyView !== 'front') return;
-              setTooltipMuscleId(null);
-              setSelectedRegion(region === selectedRegion ? null : region);
-            }}
-            onMusclePress={(muscleId) => {
-              if (bodyView !== 'front') return;
-              const now = Date.now();
-              if (now - lastPressTime.current < 300) return;
-              lastPressTime.current = now;
+      <View style={styles.bodyContainer} {...(viewMode === '2d' ? panResponder.panHandlers : {})}>
+        {viewMode === '3d' ? (
+          <Anatomy3DViewer
+            highlightedMuscles={tooltipMuscleId ? [tooltipMuscleId] : []}
+            onMuscleSelect={(muscleId) => {
               setSelectedRegion(null);
               setTooltipMuscleId(muscleId);
             }}
           />
-        </Animated.View>
+        ) : (
+          <>
+            {/* Front face */}
+            <Animated.View style={[
+              styles.bodyFace,
+              { opacity: frontOpacity, transform: [{ perspective: 800 }, { rotateY: frontRotateY }] },
+            ]}>
+              <BodyMap
+                view="front"
+                highlightedRegion={bodyView === 'front' ? selectedRegion : null}
+                onRegionPress={(region) => {
+                  if (bodyView !== 'front') return;
+                  setTooltipMuscleId(null);
+                  setSelectedRegion(region === selectedRegion ? null : region);
+                }}
+                onMusclePress={(muscleId) => {
+                  if (bodyView !== 'front') return;
+                  const now = Date.now();
+                  if (now - lastPressTime.current < 300) return;
+                  lastPressTime.current = now;
+                  setSelectedRegion(null);
+                  setTooltipMuscleId(muscleId);
+                }}
+              />
+            </Animated.View>
 
-        {/* Back face */}
-        <Animated.View style={[
-          styles.bodyFace,
-          { opacity: backOpacity, transform: [{ perspective: 800 }, { rotateY: backRotateY }] },
-        ]}>
-          <BodyMap
-            view="back"
-            highlightedRegion={bodyView === 'back' ? selectedRegion : null}
-            onRegionPress={(region) => {
-              if (bodyView !== 'back') return;
-              setTooltipMuscleId(null);
-              setSelectedRegion(region === selectedRegion ? null : region);
-            }}
-            onMusclePress={(muscleId) => {
-              if (bodyView !== 'back') return;
-              const now = Date.now();
-              if (now - lastPressTime.current < 300) return;
-              lastPressTime.current = now;
-              setSelectedRegion(null);
-              setTooltipMuscleId(muscleId);
-            }}
-          />
-        </Animated.View>
+            {/* Back face */}
+            <Animated.View style={[
+              styles.bodyFace,
+              { opacity: backOpacity, transform: [{ perspective: 800 }, { rotateY: backRotateY }] },
+            ]}>
+              <BodyMap
+                view="back"
+                highlightedRegion={bodyView === 'back' ? selectedRegion : null}
+                onRegionPress={(region) => {
+                  if (bodyView !== 'back') return;
+                  setTooltipMuscleId(null);
+                  setSelectedRegion(region === selectedRegion ? null : region);
+                }}
+                onMusclePress={(muscleId) => {
+                  if (bodyView !== 'back') return;
+                  const now = Date.now();
+                  if (now - lastPressTime.current < 300) return;
+                  lastPressTime.current = now;
+                  setSelectedRegion(null);
+                  setTooltipMuscleId(muscleId);
+                }}
+              />
+            </Animated.View>
 
-        <View style={styles.swipeHint}>
-          <MaterialCommunityIcons name="gesture-swipe-horizontal" size={16} color={colors.text.muted} />
-          <Text style={styles.swipeHintText}>
-            {t('body.swipeToRotate')}
-          </Text>
-        </View>
+            <View style={styles.swipeHint}>
+              <MaterialCommunityIcons name="gesture-swipe-horizontal" size={16} color={colors.text.muted} />
+              <Text style={styles.swipeHintText}>
+                {t('body.swipeToRotate')}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
 
       {tooltipMuscleId && (

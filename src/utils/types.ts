@@ -164,6 +164,15 @@ export interface TrainingEntry {
   compensation_suggestions: string[];
 }
 
+export interface MotionSession {
+  id: string;
+  date: string;
+  movementId: string;
+  overallScore: number;
+  phaseScores: number[];
+  duration: number;
+}
+
 export interface UserProfile {
   id: string;
   display_name: string;

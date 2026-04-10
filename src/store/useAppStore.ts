@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n';
 import { MovementLevel } from '../utils/types';
+import { MotionSession } from '../services/motionAnalysis';
 
 interface AppState {
   language: 'es' | 'en';
@@ -35,6 +36,8 @@ interface AppState {
   studyStreak: number;
   lastStudyDate: string | null;
   recordStudySession: () => void;
+  motionSessions: MotionSession[];
+  addMotionSession: (session: MotionSession) => void;
 }
 
 export interface TrainingEntry {
@@ -102,6 +105,10 @@ export const useAppStore = create<AppState>()(
       addTrainingEntry: (entry) => {
         set({ trainingLog: [entry, ...get().trainingLog].slice(0, 100) });
       },
+      motionSessions: [],
+      addMotionSession: (session) => {
+        set({ motionSessions: [session, ...get().motionSessions].slice(0, 50) });
+      },
       studyStreak: 0,
       lastStudyDate: null,
       recordStudySession: () => {
@@ -129,6 +136,7 @@ export const useAppStore = create<AppState>()(
         subscription: state.subscription,
         instructorNotes: state.instructorNotes,
         trainingLog: state.trainingLog,
+        motionSessions: state.motionSessions,
         studyStreak: state.studyStreak,
         lastStudyDate: state.lastStudyDate,
       }),

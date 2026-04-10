@@ -170,6 +170,30 @@ export function EstudioScreen() {
                 {t('study.logSessions')}
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modeCard, { borderColor: colors.accent.primary, borderWidth: 1 }]}
+              onPress={() => navigation.navigate('PoseAnalysis')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.modeIcon}>📸</Text>
+              <Text style={styles.modeTitle}>{t('features.poseDetectionTitle')}</Text>
+              <Text style={styles.modeDesc}>
+                {t('features.poseDetectionDescription')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modeCard, { borderColor: colors.accent.secondary, borderWidth: 1 }]}
+              onPress={() => navigation.navigate('PoseAnalysis')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.modeIcon}>🏋️</Text>
+              <Text style={styles.modeTitle}>{t('features.motionAnalysisTitle')}</Text>
+              <Text style={styles.modeDesc}>
+                {t('features.motionAnalysisDescription')}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <AuthorCredit />

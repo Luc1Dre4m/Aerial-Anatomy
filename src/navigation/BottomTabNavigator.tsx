@@ -18,6 +18,7 @@ import { AboutScreen } from '../screens/AboutScreen';
 import { PreTrainingScreen } from '../screens/PreTrainingScreen';
 import { TrainingLogScreen } from '../screens/TrainingLogScreen';
 import { PaywallScreen } from '../screens/PaywallScreen';
+import { PoseAnalysisScreen } from '../screens/PoseAnalysisScreen';
 import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
@@ -89,6 +90,7 @@ function EstudioStack() {
       <Stack.Screen name="MuscleDetail" component={MuscleDetailScreen} />
       <Stack.Screen name="MovementDetail" component={MovementDetailScreen} />
       <Stack.Screen name="TrainingLog" component={TrainingLogScreen} />
+      <Stack.Screen name="PoseAnalysis" component={PoseAnalysisScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} />
     </Stack.Navigator>
   );

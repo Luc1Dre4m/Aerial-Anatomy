@@ -27,7 +27,13 @@
     },
     "plugins": [
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      ["expo-camera", {
+        "cameraPermission": "Aerial Anatomy necesita acceso a la camara para analisis de pose y movimiento."
+      }],
+      ["react-native-vision-camera", {
+        "cameraPermissionText": "Aerial Anatomy necesita acceso a la camara para deteccion de pose en tiempo real."
+      }]
     ],
     "extra": {
       "eas": {

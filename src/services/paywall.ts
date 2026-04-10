@@ -23,6 +23,9 @@ export interface FeatureFlags {
   earlyAccess: boolean;
   verifiedBadge: boolean;
   customCollections: boolean;
+  anatomy3DViewer: boolean;
+  poseDetection: boolean;
+  motionAnalysis: boolean;
 }
 
 const FREE_FLAGS: FeatureFlags = {
@@ -42,6 +45,9 @@ const FREE_FLAGS: FeatureFlags = {
   earlyAccess: false,
   verifiedBadge: false,
   customCollections: false,
+  anatomy3DViewer: false,
+  poseDetection: false,
+  motionAnalysis: false,
 };
 
 const PREMIUM_FLAGS: FeatureFlags = {
@@ -61,6 +67,9 @@ const PREMIUM_FLAGS: FeatureFlags = {
   earlyAccess: false,
   verifiedBadge: false,
   customCollections: false,
+  anatomy3DViewer: true,
+  poseDetection: true,
+  motionAnalysis: true,
 };
 
 const INSTRUCTOR_FLAGS: FeatureFlags = {
