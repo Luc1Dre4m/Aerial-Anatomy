@@ -5,6 +5,8 @@ import i18n from '../i18n';
 import { MovementLevel } from '../utils/types';
 import { MotionSession } from '../services/motionAnalysis';
 
+const DEV_PREMIUM = process.env.EXPO_PUBLIC_DEV_PREMIUM === 'true';
+
 interface AppState {
   language: 'es' | 'en';
   setLanguage: (lang: 'es' | 'en') => void;
@@ -89,7 +91,7 @@ export const useAppStore = create<AppState>()(
             : [...current, id],
         });
       },
-      subscription: 'premium',
+      subscription: DEV_PREMIUM ? 'premium' : 'free',
       setSubscription: (tier) => set({ subscription: tier }),
       instructorNotes: {},
       setInstructorNote: (movementId, note) => {
@@ -143,9 +145,6 @@ export const useAppStore = create<AppState>()(
       onRehydrateStorage: () => (state) => {
         if (state?.language) {
           i18n.changeLanguage(state.language);
-        }
-        if (state && state.subscription === 'free') {
-          state.subscription = 'premium';
         }
       },
     },
