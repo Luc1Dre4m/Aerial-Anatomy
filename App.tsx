@@ -1,5 +1,7 @@
+import 'react-native-gesture-handler';
 import React, { useCallback, useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, PlayfairDisplay_700Bold } from '@expo-google-fonts/playfair-display';
@@ -143,20 +145,22 @@ export default function App() {
   };
 
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider onLayout={onLayoutRootView}>
-        {isAuthenticated ? (
-          <NavigationContainer theme={navTheme}>
-            {onboardingComplete ? <BottomTabNavigator /> : <OnboardingScreen />}
-            <StatusBar style="light" />
-          </NavigationContainer>
-        ) : (
-          <>
-            {renderAuthScreen()}
-            <StatusBar style="light" />
-          </>
-        )}
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <SafeAreaProvider onLayout={onLayoutRootView}>
+          {isAuthenticated ? (
+            <NavigationContainer theme={navTheme}>
+              {onboardingComplete ? <BottomTabNavigator /> : <OnboardingScreen />}
+              <StatusBar style="light" />
+            </NavigationContainer>
+          ) : (
+            <>
+              {renderAuthScreen()}
+              <StatusBar style="light" />
+            </>
+          )}
+        </SafeAreaProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
