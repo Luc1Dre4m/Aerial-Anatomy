@@ -1,12 +1,35 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
-import Svg, { G, Ellipse } from 'react-native-svg';
+import Svg, {
+  G,
+  Ellipse,
+  Defs,
+  RadialGradient,
+  Stop,
+  Rect,
+} from 'react-native-svg';
+import Animated, {
+  useSharedValue,
+  useAnimatedProps,
+  withRepeat,
+  withTiming,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import { MuscleRegion } from '../../utils/types';
 import { getMuscleById } from '../../data/muscles';
-import { BODY_ZONES, REGION_ZONE_COLOR, BODY_VIEWBOX } from './bodyConstants';
+import {
+  BODY_ZONES,
+  REGION_ZONE_COLOR,
+  BODY_VIEWBOX,
+  BODY_WIDTH,
+  BODY_HEIGHT,
+} from './bodyConstants';
+import { getMuscleZonesForView } from '../../data/muscleZones';
 
 const ANATOMY_FRONT = require('../../../assets/anatomy/muscle_front.png');
 const ANATOMY_BACK = require('../../../assets/anatomy/muscle_back.png');
+
+const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
 
 interface AnatomicalBodyProps {
   view: 'front' | 'back';
@@ -25,7 +48,6 @@ function AnatomicalBodyInner({
   view,
   highlightedRegion,
   highlightedMuscleIds,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   selectedMuscleId,
   onRegionPress,
   onMusclePress,
@@ -46,6 +68,25 @@ function AnatomicalBodyInner({
 
   const hasHighlight = highlightedRegion != null || highlightedRegionsFromIds.size > 0;
 
+  const muscleZones = useMemo(() => getMuscleZonesForView(view), [view]);
+
+  const pulse = useSharedValue(0.45);
+  useEffect(() => {
+    if (selectedMuscleId) {
+      pulse.value = withRepeat(withTiming(0.9, { duration: 900 }), -1, true);
+    } else {
+      cancelAnimation(pulse);
+      pulse.value = withTiming(0.45, { duration: 200 });
+    }
+    return () => {
+      cancelAnimation(pulse);
+    };
+  }, [selectedMuscleId, pulse]);
+
+  const pulseProps = useAnimatedProps(() => ({
+    opacity: pulse.value,
+  }));
+
   return (
     <View style={styles.container}>
       <Image
@@ -58,6 +99,41 @@ function AnatomicalBodyInner({
         viewBox={BODY_VIEWBOX}
         pointerEvents={onRegionPress || onMusclePress ? 'box-none' : 'none'}
       >
+        <Defs>
+          <RadialGradient
+            id="vignette"
+            cx="50%"
+            cy="50%"
+            rx="70%"
+            ry="70%"
+            fx="50%"
+            fy="50%"
+          >
+            <Stop offset="60%" stopColor="#000" stopOpacity="0" />
+            <Stop offset="100%" stopColor="#000" stopOpacity="0.55" />
+          </RadialGradient>
+          <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#D4A843" stopOpacity="0.9" />
+            <Stop offset="60%" stopColor="#D4A843" stopOpacity="0.35" />
+            <Stop offset="100%" stopColor="#D4A843" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="sheen" cx="50%" cy="20%" r="80%">
+            <Stop offset="0%" stopColor="#FFF" stopOpacity="0.08" />
+            <Stop offset="100%" stopColor="#FFF" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+
+        {/* Sheen — subtle highlight on top of figure */}
+        <Rect
+          x={0}
+          y={0}
+          width={BODY_WIDTH}
+          height={BODY_HEIGHT}
+          fill="url(#sheen)"
+          pointerEvents="none"
+        />
+
+        {/* Region zones layer — fallback targets + highlight */}
         <G>
           {BODY_ZONES.map((zone, index) => {
             const pos = view === 'front' ? zone.front : zone.back;
@@ -81,7 +157,7 @@ function AnatomicalBodyInner({
               strokeWidth = 2;
             } else if (isRegionHighlighted) {
               fill = regionColor;
-              fillOpacity = 0.35;
+              fillOpacity = 0.32;
               stroke = regionColor;
               strokeOpacity = 0.9;
               strokeWidth = 2;
@@ -109,6 +185,58 @@ function AnatomicalBodyInner({
             );
           })}
         </G>
+
+        {/* Muscle zones layer — priority hit targets */}
+        <G>
+          {muscleZones.map((mz, idx) => {
+            const isSelected = selectedMuscleId === mz.muscleId;
+            const tappable = showInteractionZones && !!onMusclePress;
+            return (
+              <Ellipse
+                key={`mz-${mz.muscleId}-${idx}`}
+                cx={mz.ellipse.cx}
+                cy={mz.ellipse.cy}
+                rx={mz.ellipse.rx}
+                ry={mz.ellipse.ry}
+                fill={isSelected ? '#D4A843' : 'transparent'}
+                fillOpacity={isSelected ? 0.28 : 0}
+                stroke={isSelected ? '#F5E6C4' : 'transparent'}
+                strokeWidth={isSelected ? 1.5 : 0}
+                strokeOpacity={isSelected ? 0.9 : 0}
+                onPress={tappable ? () => onMusclePress!(mz.muscleId) : undefined}
+              />
+            );
+          })}
+        </G>
+
+        {/* Pulse glow on selected muscle (top layer, not tappable) */}
+        {selectedMuscleId && (
+          <G pointerEvents="none">
+            {muscleZones
+              .filter((mz) => mz.muscleId === selectedMuscleId)
+              .map((mz, idx) => (
+                <AnimatedEllipse
+                  key={`glow-${mz.muscleId}-${idx}`}
+                  cx={mz.ellipse.cx}
+                  cy={mz.ellipse.cy}
+                  rx={mz.ellipse.rx * 1.9}
+                  ry={mz.ellipse.ry * 1.9}
+                  fill="url(#glow)"
+                  animatedProps={pulseProps}
+                />
+              ))}
+          </G>
+        )}
+
+        {/* Vignette overlay — frames the figure */}
+        <Rect
+          x={0}
+          y={0}
+          width={BODY_WIDTH}
+          height={BODY_HEIGHT}
+          fill="url(#vignette)"
+          pointerEvents="none"
+        />
       </Svg>
     </View>
   );
@@ -130,6 +258,7 @@ export const AnatomicalBody = React.memo(AnatomicalBodyInner, (prev, next) => {
   return (
     prev.view === next.view &&
     prev.highlightedRegion === next.highlightedRegion &&
+    prev.selectedMuscleId === next.selectedMuscleId &&
     prev.bodyOpacity === next.bodyOpacity &&
     prev.highlightColor === next.highlightColor &&
     prev.showInteractionZones === next.showInteractionZones &&
