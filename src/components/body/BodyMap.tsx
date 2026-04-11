@@ -26,8 +26,8 @@ export function BodyMap({ view, highlightedRegion, onRegionPress, onMusclePress 
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    aspectRatio: 300 / 460,
-    maxHeight: 420,
+    aspectRatio: 300 / 420,
+    maxHeight: 500,
     alignSelf: 'center',
   },
 });

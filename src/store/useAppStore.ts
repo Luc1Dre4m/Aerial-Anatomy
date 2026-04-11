@@ -89,7 +89,7 @@ export const useAppStore = create<AppState>()(
             : [...current, id],
         });
       },
-      subscription: 'free',
+      subscription: 'premium',
       setSubscription: (tier) => set({ subscription: tier }),
       instructorNotes: {},
       setInstructorNote: (movementId, note) => {
@@ -143,6 +143,9 @@ export const useAppStore = create<AppState>()(
       onRehydrateStorage: () => (state) => {
         if (state?.language) {
           i18n.changeLanguage(state.language);
+        }
+        if (state && state.subscription === 'free') {
+          state.subscription = 'premium';
         }
       },
     },

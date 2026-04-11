@@ -1,15 +1,12 @@
 import React, { useMemo } from 'react';
-import Svg, { G, Path, Ellipse } from 'react-native-svg';
+import { View, Image, StyleSheet } from 'react-native';
+import Svg, { G, Ellipse } from 'react-native-svg';
 import { MuscleRegion } from '../../utils/types';
-import {
-  BODY_SILHOUETTE_FRONT,
-  BODY_SILHOUETTE_BACK,
-  getMusclePathsByView,
-  MusclePathDef,
-} from '../../data/bodyPaths';
+import { getMuscleById } from '../../data/muscles';
 import { BODY_ZONES, REGION_ZONE_COLOR, BODY_VIEWBOX } from './bodyConstants';
-import { BodyDefs } from './BodyDefs';
-import { MuscleLayer } from './MuscleLayer';
+
+const ANATOMY_FRONT = require('../../../assets/anatomy/muscle_front.png');
+const ANATOMY_BACK = require('../../../assets/anatomy/muscle_back.png');
 
 interface AnatomicalBodyProps {
   view: 'front' | 'back';
@@ -34,87 +31,63 @@ function AnatomicalBodyInner({
   showInteractionZones = true,
   regionColorOverrides,
 }: AnatomicalBodyProps) {
-  const musclePaths = useMemo(() => getMusclePathsByView(view), [view]);
-  const silhouette = view === 'front' ? BODY_SILHOUETTE_FRONT : BODY_SILHOUETTE_BACK;
-
-  const hasHighlight = highlightedRegion != null || (highlightedMuscleIds != null && highlightedMuscleIds.length > 0);
-
-  // Separate deep and surface muscles
-  const deepMuscles = useMemo(
-    () => musclePaths.filter((m) => m.depth === 'profundo'),
-    [musclePaths],
-  );
-  const surfaceMuscles = useMemo(
-    () => musclePaths.filter((m) => m.depth === 'superficial'),
-    [musclePaths],
-  );
-
-  function isHighlighted(mp: MusclePathDef): boolean {
-    if (highlightedMuscleIds && highlightedMuscleIds.length > 0) {
-      return highlightedMuscleIds.includes(mp.id);
+  const highlightedRegionsFromIds = useMemo(() => {
+    if (!highlightedMuscleIds || highlightedMuscleIds.length === 0) return new Set<MuscleRegion>();
+    const set = new Set<MuscleRegion>();
+    for (const id of highlightedMuscleIds) {
+      const m = getMuscleById(id);
+      if (m) set.add(m.region);
     }
-    if (highlightedRegion) {
-      return mp.region === highlightedRegion;
-    }
-    return false;
-  }
+    return set;
+  }, [highlightedMuscleIds]);
 
-  function getHighlightColor(mp: MusclePathDef): string {
-    if (highlightColor) return highlightColor;
-    return REGION_ZONE_COLOR[mp.region];
-  }
+  const hasHighlight = highlightedRegion != null || highlightedRegionsFromIds.size > 0;
 
   return (
-    <Svg width="100%" height="100%" viewBox={BODY_VIEWBOX}>
-      <BodyDefs />
-
-      {/* Layer 1: Body silhouette */}
-      <G opacity={bodyOpacity}>
-        <Path
-          d={silhouette}
-          fill="url(#silhouette-fill)"
-          stroke="#4A4A6A"
-          strokeWidth={0.8}
-          strokeOpacity={0.4}
-        />
-      </G>
-
-      {/* Layer 2: Deep muscles */}
-      <G opacity={bodyOpacity}>
-        {deepMuscles.map((mp) => (
-          <MuscleLayer
-            key={`${mp.id}-${mp.side}`}
-            pathDef={mp}
-            view={view}
-            highlighted={isHighlighted(mp)}
-            highlightColor={getHighlightColor(mp)}
-            dimmed={hasHighlight && !isHighlighted(mp)}
-            onPress={onMusclePress ? () => onMusclePress(mp.id) : undefined}
-          />
-        ))}
-      </G>
-
-      {/* Layer 3: Surface muscles */}
-      <G opacity={bodyOpacity}>
-        {surfaceMuscles.map((mp) => (
-          <MuscleLayer
-            key={`${mp.id}-${mp.side}`}
-            pathDef={mp}
-            view={view}
-            highlighted={isHighlighted(mp)}
-            highlightColor={getHighlightColor(mp)}
-            dimmed={hasHighlight && !isHighlighted(mp)}
-            onPress={onMusclePress ? () => onMusclePress(mp.id) : undefined}
-          />
-        ))}
-      </G>
-
-      {/* Layer 5: Interaction zones — invisible tappable ellipses */}
-      {showInteractionZones && onRegionPress && (
+    <View style={styles.container}>
+      <Image
+        source={view === 'front' ? ANATOMY_FRONT : ANATOMY_BACK}
+        style={[StyleSheet.absoluteFill, { opacity: bodyOpacity }]}
+        resizeMode="contain"
+      />
+      <Svg
+        style={StyleSheet.absoluteFill}
+        viewBox={BODY_VIEWBOX}
+        pointerEvents={onRegionPress || onMusclePress ? 'box-none' : 'none'}
+      >
         <G>
           {BODY_ZONES.map((zone, index) => {
             const pos = view === 'front' ? zone.front : zone.back;
             const override = regionColorOverrides?.[`${zone.region}-${index}`];
+
+            const isRegionHighlighted =
+              highlightedRegion === zone.region || highlightedRegionsFromIds.has(zone.region);
+            const regionColor = highlightColor ?? REGION_ZONE_COLOR[zone.region];
+
+            let fill = 'transparent';
+            let fillOpacity = 0;
+            let stroke = 'transparent';
+            let strokeOpacity = 0;
+            let strokeWidth = 0;
+
+            if (override) {
+              fill = override.fill;
+              fillOpacity = override.opacity;
+              stroke = override.fill;
+              strokeOpacity = 0.8;
+              strokeWidth = 2;
+            } else if (isRegionHighlighted) {
+              fill = regionColor;
+              fillOpacity = 0.35;
+              stroke = regionColor;
+              strokeOpacity = 0.9;
+              strokeWidth = 2;
+            } else if (hasHighlight) {
+              fill = 'transparent';
+              fillOpacity = 0;
+            }
+
+            const tappable = showInteractionZones && !!onRegionPress;
 
             return (
               <Ellipse
@@ -123,20 +96,27 @@ function AnatomicalBodyInner({
                 cy={pos.cy}
                 rx={pos.rx}
                 ry={pos.ry}
-                fill={override ? override.fill : 'transparent'}
-                fillOpacity={override ? override.opacity : 0}
-                stroke={override ? override.fill : 'transparent'}
-                strokeWidth={override ? 2 : 0}
-                strokeOpacity={override ? 0.8 : 0}
-                onPress={() => onRegionPress(zone.region)}
+                fill={fill}
+                fillOpacity={fillOpacity}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+                strokeOpacity={strokeOpacity}
+                onPress={tappable ? () => onRegionPress!(zone.region) : undefined}
               />
             );
           })}
         </G>
-      )}
-    </Svg>
+      </Svg>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: 'relative',
+  },
+});
 
 export const AnatomicalBody = React.memo(AnatomicalBodyInner, (prev, next) => {
   const idsEqual =
@@ -149,6 +129,7 @@ export const AnatomicalBody = React.memo(AnatomicalBodyInner, (prev, next) => {
     prev.highlightedRegion === next.highlightedRegion &&
     prev.bodyOpacity === next.bodyOpacity &&
     prev.highlightColor === next.highlightColor &&
+    prev.showInteractionZones === next.showInteractionZones &&
     idsEqual &&
     prev.regionColorOverrides === next.regionColorOverrides
   );
