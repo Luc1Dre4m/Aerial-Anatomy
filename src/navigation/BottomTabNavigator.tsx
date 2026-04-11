@@ -43,6 +43,7 @@ function CuerpoStack() {
     <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="CuerpoMain" component={CuerpoScreen} />
       <Stack.Screen name="MuscleDetail" component={MuscleDetailScreen} />
+      <Stack.Screen name="MovementDetail" component={MovementDetailScreen} />
       <Stack.Screen name="About" component={AboutScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} />
     </Stack.Navigator>

@@ -127,23 +127,28 @@ export function ActivationSequence({ muscles, onMusclePress }: ActivationSequenc
   const sorted = [...muscles].sort((a, b) => a.activation_order - b.activation_order);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
 
   const playAnimation = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
     setActiveIndex(-1);
     setIsPlaying(true);
 
     let step = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       if (step < sorted.length) {
         setActiveIndex(step);
         step++;
       } else {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
         setIsPlaying(false);
       }
     }, STEP_DELAY + STEP_DURATION / 2);
-
-    return () => clearInterval(interval);
   }, [sorted.length]);
 
   const showAll = useCallback(() => {

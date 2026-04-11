@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import i18n from '../../i18n';
 import { colors, typography, spacing } from '../../theme';
 
 interface Props {
@@ -34,14 +35,14 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <View style={styles.container}>
           <MaterialCommunityIcons name="alert-circle-outline" size={56} color={colors.text.muted} />
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>An unexpected error occurred.</Text>
+          <Text style={styles.title}>{i18n.t('common.errorTitle')}</Text>
+          <Text style={styles.message}>{i18n.t('common.errorMessage')}</Text>
           <TouchableOpacity
             style={styles.button}
             onPress={this.handleReset}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>Try again</Text>
+            <Text style={styles.buttonText}>{i18n.t('common.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       );

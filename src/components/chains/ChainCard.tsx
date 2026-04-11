@@ -11,7 +11,7 @@ interface ChainCardProps {
   onPress: () => void;
 }
 
-export function ChainCard({ chain, onPress }: ChainCardProps) {
+export const ChainCard = React.memo(function ChainCard({ chain, onPress }: ChainCardProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
   const name = lang === 'es' ? chain.name_es : chain.name_en;
@@ -57,7 +57,7 @@ export function ChainCard({ chain, onPress }: ChainCardProps) {
       </Text>
     </AnimatedPressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

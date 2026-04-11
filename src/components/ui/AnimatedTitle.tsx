@@ -11,7 +11,7 @@ export function AnimatedTitle({ text, style }: AnimatedTitleProps) {
   const translateY = useRef(new Animated.Value(15)).current;
 
   useEffect(() => {
-    Animated.parallel([
+    const anim = Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
         duration: 400,
@@ -22,7 +22,9 @@ export function AnimatedTitle({ text, style }: AnimatedTitleProps) {
         duration: 400,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+    anim.start();
+    return () => anim.stop();
   }, []);
 
   return (

@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.md,
-    marginTop: 'auto' as any,
+    marginTop: spacing.xl,
   },
   primaryBtn: {
     backgroundColor: colors.accent.primary,

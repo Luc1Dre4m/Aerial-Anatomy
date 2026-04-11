@@ -10,6 +10,7 @@ i18n.use(initReactI18next).init({
   },
   lng: 'es',
   fallbackLng: 'es',
+  compatibilityJSON: 'v4',
   interpolation: { escapeValue: false },
 });
 

@@ -68,7 +68,7 @@ export function PoseAnalysisScreen() {
 
   // Deactivate camera when not needed (saves battery/CPU)
   useEffect(() => {
-    setIsActive(analysisMode === 'detect' || analysisMode === 'recording');
+    setIsActive(analysisMode === 'detect' || analysisMode === 'recording' || analysisMode === 'countdown');
   }, [analysisMode]);
 
   // BackHandler for Android hardware back in overlay modes
@@ -218,7 +218,7 @@ export function PoseAnalysisScreen() {
         </View>
         <View style={styles.noCameraContainer}>
           <MaterialCommunityIcons name="camera-off" size={48} color={colors.text.muted} />
-          <Text style={styles.noCameraText}>No camera available</Text>
+          <Text style={styles.noCameraText}>{t('pose.noCamera')}</Text>
         </View>
       </SafeAreaView>
     );

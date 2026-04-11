@@ -118,8 +118,9 @@ export default function App() {
         return (
           <RegisterScreen
             onNavigateLogin={() => setAuthScreen('login')}
-            onRegistered={(email) => {
+            onRegistered={(email, password) => {
               setPendingEmail(email);
+              setPendingPassword(password);
               setAuthScreen('verify');
             }}
           />

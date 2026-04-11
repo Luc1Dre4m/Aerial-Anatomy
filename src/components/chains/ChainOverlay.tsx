@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BiomechanicalChain } from '../../utils/types';
@@ -31,21 +31,27 @@ export function ChainOverlay({ chain }: ChainOverlayProps) {
     return chainMuscleData.slice(0, activeCount).map((cz) => cz.muscle.id);
   }, [chainMuscleData, activeCount]);
 
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
   const playAnimation = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
     setActiveCount(0);
     setIsPlaying(true);
 
     let step = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       step++;
       setActiveCount(step);
       if (step >= chainMuscleData.length) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
         setIsPlaying(false);
       }
     }, STEP_DELAY);
-
-    return () => clearInterval(interval);
   }, [chainMuscleData.length]);
 
   const showAll = useCallback(() => {

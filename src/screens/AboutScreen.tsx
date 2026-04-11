@@ -1,14 +1,27 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { colors, typography, spacing } from '../theme';
 
 export function AboutScreen() {
   const { t } = useTranslation();
+  const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.goBack')}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.accent.primary} />
+        </TouchableOpacity>
+      </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>{t('about.title')}</Text>
 
@@ -51,9 +64,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg.primary,
   },
+  topBar: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  backBtn: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    alignSelf: 'flex-start' as const,
+  },
   content: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxxl,
     gap: spacing.lg,
   },

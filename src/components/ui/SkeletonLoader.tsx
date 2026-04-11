@@ -20,7 +20,7 @@ function SkeletonBlock({ width, height, style }: { width: number | string; heigh
     );
     animation.start();
     return () => animation.stop();
-  }, [shimmer]);
+  }, []);
 
   const opacity = shimmer.interpolate({
     inputRange: [0, 1],

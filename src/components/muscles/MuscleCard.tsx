@@ -11,7 +11,7 @@ interface MuscleCardProps {
   onPress: () => void;
 }
 
-export function MuscleCard({ muscle, onPress }: MuscleCardProps) {
+export const MuscleCard = React.memo(function MuscleCard({ muscle, onPress }: MuscleCardProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
 
@@ -40,7 +40,7 @@ export function MuscleCard({ muscle, onPress }: MuscleCardProps) {
       </View>
     </AnimatedPressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

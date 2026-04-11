@@ -27,12 +27,14 @@ export function MuscleOfTheDay({ onPress }: MuscleOfTheDayProps) {
   const glowOpacity = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(glowOpacity, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
         Animated.timing(glowOpacity, { toValue: 0.3, duration: 1500, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    anim.start();
+    return () => anim.stop();
   }, []);
 
   return (

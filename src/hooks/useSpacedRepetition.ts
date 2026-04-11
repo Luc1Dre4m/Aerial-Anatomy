@@ -92,11 +92,10 @@ export function useSpacedRepetition(allMuscles: Muscle[]): SpacedRepetitionResul
   const rateCard = useCallback((quality: 0 | 1 | 2 | 3) => {
     if (!currentCard) return;
 
-    const oldState = cardStates.get(currentCard.id);
-    if (!oldState) return;
-
-    const newState = updateCard(oldState, quality);
     setCardStates((prev) => {
+      const oldState = prev.get(currentCard.id);
+      if (!oldState) return prev;
+      const newState = updateCard(oldState, quality);
       const next = new Map(prev);
       next.set(currentCard.id, newState);
       return next;

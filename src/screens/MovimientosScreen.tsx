@@ -141,6 +141,8 @@ export function MovimientosScreen() {
       <FlashList
         data={filtered}
         keyExtractor={(item) => item.id}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<EmptySearchState />}
         renderItem={({ item }) => (

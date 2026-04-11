@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Animated, PanResponder, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, Animated, PanResponder, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -223,7 +223,7 @@ export function CuerpoScreen() {
           <Text style={styles.regionCount}>
             {t('muscles.count', { count: regionMuscles.length })}
           </Text>
-          <View style={styles.muscleList}>
+          <ScrollView style={styles.muscleList} showsVerticalScrollIndicator={false} nestedScrollEnabled>
             {regionMuscles.map((m) => (
               <TouchableOpacity
                 key={m.id}
@@ -236,7 +236,7 @@ export function CuerpoScreen() {
                 <Text style={styles.muscleLatin}>{m.name_latin}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </View>
       ) : (
         <View style={styles.hint}>
@@ -296,32 +296,6 @@ const styles = StyleSheet.create({
     color: colors.accent.light,
     marginBottom: spacing.sm,
   },
-  viewToggle: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    backgroundColor: colors.bg.secondary,
-    borderRadius: 8,
-    padding: 2,
-    gap: 2,
-  },
-  viewBtn: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderRadius: 6,
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  viewBtnActive: {
-    backgroundColor: colors.accent.primary,
-  },
-  viewBtnText: {
-    ...typography.body.small,
-    color: colors.text.muted,
-    fontWeight: '600',
-  },
-  viewBtnTextActive: {
-    color: colors.bg.primary,
-  },
   bodyContainer: {
     flex: 1,
     paddingHorizontal: spacing.xl,
@@ -364,6 +338,7 @@ const styles = StyleSheet.create({
     color: colors.text.muted,
   },
   muscleList: {
+    maxHeight: 200,
     gap: spacing.sm,
   },
   muscleItem: {

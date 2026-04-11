@@ -138,10 +138,11 @@ export function PaywallScreen() {
 
   // Price display (from RevenueCat or fallback)
   const getPriceText = (period: 'monthly' | 'annual', plan: PlanTab) => {
+    const suffix = period === 'monthly' ? t('paywall.perMonth') : t('paywall.perYear');
     if (plan === 'premium') {
-      return period === 'monthly' ? '$1.99/mes' : '$14.99/ano';
+      return period === 'monthly' ? `$1.99${suffix}` : `$14.99${suffix}`;
     }
-    return period === 'monthly' ? '$4.99/mes' : '$39.99/ano';
+    return period === 'monthly' ? `$4.99${suffix}` : `$39.99${suffix}`;
   };
 
   const getPackageId = (period: 'monthly' | 'annual', plan: PlanTab) => {

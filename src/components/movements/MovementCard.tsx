@@ -12,7 +12,7 @@ interface MovementCardProps {
   onPress: () => void;
 }
 
-export function MovementCard({ movement, onPress }: MovementCardProps) {
+export const MovementCard = React.memo(function MovementCard({ movement, onPress }: MovementCardProps) {
   const { i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
   const name = lang === 'es' ? movement.name_es : movement.name_en;
@@ -57,7 +57,7 @@ export function MovementCard({ movement, onPress }: MovementCardProps) {
       )}
     </AnimatedPressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

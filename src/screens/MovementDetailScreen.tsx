@@ -359,10 +359,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 26,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.divider,
-  },
   roleSection: {
     gap: spacing.sm,
   },

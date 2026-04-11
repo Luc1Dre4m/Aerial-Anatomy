@@ -9,7 +9,7 @@ interface ChainFlowViewProps {
   chain: BiomechanicalChain;
 }
 
-export function ChainFlowView({ chain }: ChainFlowViewProps) {
+export const ChainFlowView = React.memo(function ChainFlowView({ chain }: ChainFlowViewProps) {
   const { i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
 
@@ -52,7 +52,7 @@ export function ChainFlowView({ chain }: ChainFlowViewProps) {
       })}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

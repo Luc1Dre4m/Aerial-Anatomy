@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { movements, getMovementById } from '../data/movements';
 import { getMuscleById } from '../data/muscles';
-import { MuscleRole, MovementMuscle } from '../utils/types';
+import { MuscleRole } from '../utils/types';
 import { colors, typography, spacing } from '../theme';
 
 const ROLE_COLORS: Record<MuscleRole, string> = {

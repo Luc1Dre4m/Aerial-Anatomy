@@ -263,6 +263,8 @@ export default {
     description: 'Access all anatomical content, advanced study tools, and exclusive features for instructors.',
     annual: 'Annual',
     monthly: 'Monthly',
+    perMonth: '/mo',
+    perYear: '/yr',
     allMuscles: 'All 36+ detailed muscles',
     allMovements: 'All 50+ movements with sequences',
     animations: 'Muscle activation animations',
@@ -390,6 +392,7 @@ export default {
     openSettings: 'Open Settings',
   },
   pose: {
+    noCamera: 'No camera available',
     detecting: 'Detecting pose...',
     noPersonDetected: 'No person detected',
     multiplePeopleWarning: 'Multiple people detected. Focus on one person.',

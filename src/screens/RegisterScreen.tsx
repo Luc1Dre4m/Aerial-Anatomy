@@ -8,7 +8,7 @@ import { colors, typography, spacing } from '../theme';
 
 interface RegisterScreenProps {
   onNavigateLogin: () => void;
-  onRegistered: (email: string) => void;
+  onRegistered: (email: string, password: string) => void;
 }
 
 export function RegisterScreen({ onNavigateLogin, onRegistered }: RegisterScreenProps) {
@@ -39,7 +39,7 @@ export function RegisterScreen({ onNavigateLogin, onRegistered }: RegisterScreen
     setError('');
     try {
       await signUp(email.trim(), password);
-      onRegistered(email.trim());
+      onRegistered(email.trim(), password);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
       if (message.includes('already registered')) {

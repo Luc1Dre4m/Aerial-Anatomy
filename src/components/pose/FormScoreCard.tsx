@@ -47,6 +47,13 @@ export function FormScoreCard({
   const [displayNumber, setDisplayNumber] = useState(0);
 
   useEffect(() => {
+    // Reset animated values
+    numberAnim.setValue(0);
+    setDisplayNumber(0);
+    ringScale.setValue(0.5);
+    ringOpacity.setValue(0);
+    contentOpacity.setValue(0);
+
     // Ring entrance
     Animated.parallel([
       Animated.timing(ringOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
@@ -55,14 +62,18 @@ export function FormScoreCard({
 
     // Number counter
     const listener = numberAnim.addListener(({ value }) => setDisplayNumber(Math.round(value)));
-    Animated.sequence([
+    const counterAnim = Animated.sequence([
       Animated.delay(250),
       Animated.timing(numberAnim, { toValue: score.overall, duration: 800, useNativeDriver: false }),
-    ]).start(() => {
+    ]);
+    counterAnim.start(() => {
       Animated.timing(contentOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
     });
 
-    return () => numberAnim.removeListener(listener);
+    return () => {
+      numberAnim.removeListener(listener);
+      counterAnim.stop();
+    };
   }, [score.overall]);
 
   return (
