@@ -12,6 +12,7 @@ interface AnatomicalBodyProps {
   view: 'front' | 'back';
   highlightedRegion?: MuscleRegion | null;
   highlightedMuscleIds?: string[];
+  selectedMuscleId?: string | null;
   onRegionPress?: (region: MuscleRegion) => void;
   onMusclePress?: (muscleId: string) => void;
   highlightColor?: string;
@@ -24,6 +25,8 @@ function AnatomicalBodyInner({
   view,
   highlightedRegion,
   highlightedMuscleIds,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  selectedMuscleId,
   onRegionPress,
   onMusclePress,
   highlightColor,

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Animated, PanResponder, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Pressable, Animated, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { LanguageToggle, AuthorCredit, GlobalSearch } from '../components/ui';
 import { MuscleOfTheDay } from '../components/ui/MuscleOfTheDay';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { BodyMap } from '../components/body/BodyMap';
+import { ZoomableBody } from '../components/body/ZoomableBody';
 import { MuscleTooltip } from '../components/body/MuscleTooltip';
 import { Anatomy3DViewer } from '../components/body/Anatomy3DViewer';
 import { ViewModeToggle } from '../components/body/ViewModeToggle';
@@ -61,19 +62,10 @@ export function CuerpoScreen() {
     });
   }, [flipAnim]);
 
-  // Swipe gesture for 3D flip
-  const panResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gestureState) => {
-      return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < 40;
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (Math.abs(gestureState.dx) > 50) {
-        // Swipe detected — flip
-        const target = bodyViewRef.current === 'front' ? 'back' : 'front';
-        flipTo(target);
-      }
-    },
-  }), [flipTo]);
+  const handleFling = useCallback(() => {
+    const target = bodyViewRef.current === 'front' ? 'back' : 'front';
+    flipTo(target);
+  }, [flipTo]);
 
   // Interpolate flip animation for 3D rotation effect
   const frontRotateY = flipAnim.interpolate({
@@ -129,7 +121,7 @@ export function CuerpoScreen() {
         onChangeBodyView={(target) => flipTo(target)}
       />
 
-      <View style={styles.bodyContainer} {...(viewMode === '2d' ? panResponder.panHandlers : {})}>
+      <View style={styles.bodyContainer}>
         {viewMode === '3d' ? (
           <ErrorBoundary>
             <Anatomy3DViewer
@@ -147,23 +139,26 @@ export function CuerpoScreen() {
               styles.bodyFace,
               { opacity: frontOpacity, transform: [{ perspective: 800 }, { rotateY: frontRotateY }] },
             ]}>
-              <BodyMap
-                view="front"
-                highlightedRegion={bodyView === 'front' ? selectedRegion : null}
-                onRegionPress={(region) => {
-                  if (bodyView !== 'front') return;
-                  setTooltipMuscleId(null);
-                  setSelectedRegion(region === selectedRegion ? null : region);
-                }}
-                onMusclePress={(muscleId) => {
-                  if (bodyView !== 'front') return;
-                  const now = Date.now();
-                  if (now - lastPressTime.current < 300) return;
-                  lastPressTime.current = now;
-                  setSelectedRegion(null);
-                  setTooltipMuscleId(muscleId);
-                }}
-              />
+              <ZoomableBody onFlingHorizontal={handleFling}>
+                <BodyMap
+                  view="front"
+                  highlightedRegion={bodyView === 'front' ? selectedRegion : null}
+                  selectedMuscleId={bodyView === 'front' ? tooltipMuscleId : null}
+                  onRegionPress={(region) => {
+                    if (bodyView !== 'front') return;
+                    setTooltipMuscleId(null);
+                    setSelectedRegion(region === selectedRegion ? null : region);
+                  }}
+                  onMusclePress={(muscleId) => {
+                    if (bodyView !== 'front') return;
+                    const now = Date.now();
+                    if (now - lastPressTime.current < 300) return;
+                    lastPressTime.current = now;
+                    setSelectedRegion(null);
+                    setTooltipMuscleId(muscleId);
+                  }}
+                />
+              </ZoomableBody>
             </Animated.View>
 
             {/* Back face */}
@@ -171,23 +166,26 @@ export function CuerpoScreen() {
               styles.bodyFace,
               { opacity: backOpacity, transform: [{ perspective: 800 }, { rotateY: backRotateY }] },
             ]}>
-              <BodyMap
-                view="back"
-                highlightedRegion={bodyView === 'back' ? selectedRegion : null}
-                onRegionPress={(region) => {
-                  if (bodyView !== 'back') return;
-                  setTooltipMuscleId(null);
-                  setSelectedRegion(region === selectedRegion ? null : region);
-                }}
-                onMusclePress={(muscleId) => {
-                  if (bodyView !== 'back') return;
-                  const now = Date.now();
-                  if (now - lastPressTime.current < 300) return;
-                  lastPressTime.current = now;
-                  setSelectedRegion(null);
-                  setTooltipMuscleId(muscleId);
-                }}
-              />
+              <ZoomableBody onFlingHorizontal={handleFling}>
+                <BodyMap
+                  view="back"
+                  highlightedRegion={bodyView === 'back' ? selectedRegion : null}
+                  selectedMuscleId={bodyView === 'back' ? tooltipMuscleId : null}
+                  onRegionPress={(region) => {
+                    if (bodyView !== 'back') return;
+                    setTooltipMuscleId(null);
+                    setSelectedRegion(region === selectedRegion ? null : region);
+                  }}
+                  onMusclePress={(muscleId) => {
+                    if (bodyView !== 'back') return;
+                    const now = Date.now();
+                    if (now - lastPressTime.current < 300) return;
+                    lastPressTime.current = now;
+                    setSelectedRegion(null);
+                    setTooltipMuscleId(muscleId);
+                  }}
+                />
+              </ZoomableBody>
             </Animated.View>
 
             <View style={styles.swipeHint}>
