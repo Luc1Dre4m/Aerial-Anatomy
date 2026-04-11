@@ -100,24 +100,16 @@ function AnatomicalBodyInner({
         pointerEvents={onRegionPress || onMusclePress ? 'box-none' : 'none'}
       >
         <Defs>
-          <RadialGradient
-            id="vignette"
-            cx="50%"
-            cy="50%"
-            rx="70%"
-            ry="70%"
-            fx="50%"
-            fy="50%"
-          >
+          <RadialGradient id="vignette" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
             <Stop offset="60%" stopColor="#000" stopOpacity="0" />
-            <Stop offset="100%" stopColor="#000" stopOpacity="0.55" />
+            <Stop offset="100%" stopColor="#000" stopOpacity="0.6" />
           </RadialGradient>
-          <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
+          <RadialGradient id="glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
             <Stop offset="0%" stopColor="#D4A843" stopOpacity="0.9" />
             <Stop offset="60%" stopColor="#D4A843" stopOpacity="0.35" />
             <Stop offset="100%" stopColor="#D4A843" stopOpacity="0" />
           </RadialGradient>
-          <RadialGradient id="sheen" cx="50%" cy="20%" r="80%">
+          <RadialGradient id="sheen" cx="50%" cy="20%" r="80%" fx="50%" fy="20%">
             <Stop offset="0%" stopColor="#FFF" stopOpacity="0.08" />
             <Stop offset="100%" stopColor="#FFF" stopOpacity="0" />
           </RadialGradient>

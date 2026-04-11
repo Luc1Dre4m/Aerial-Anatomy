@@ -34,7 +34,6 @@ export function BodyMap({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
     aspectRatio: 300 / 420,
     alignSelf: 'center',
   },
