@@ -5,6 +5,8 @@ export const BODY_WIDTH = 300;
 export const BODY_HEIGHT = 420;
 export const BODY_VIEWBOX = `0 0 ${BODY_WIDTH} ${BODY_HEIGHT}`;
 
+export type BodyView = 'front' | 'back';
+
 export interface ZoneDef {
   region: MuscleRegion;
   front: { cx: number; cy: number; rx: number; ry: number };
