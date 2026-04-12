@@ -15,3 +15,16 @@ Tras migrar `AnatomicalBody` a `<Image>` + overlay SVG (commit `62f4f55` — "Re
 1. `grep -r "bodyPaths\|BodyDefs\|MuscleLayer\b" src/` — confirmar 0 matches fuera de los propios archivos.
 2. Eliminar en un commit separado con mensaje `chore(cleanup): remove synthetic body path components`.
 3. Correr `tsc --noEmit` post-eliminacion.
+
+## Huerfanos del refactor de 3D viewer (commit `cebb190`)
+
+Tras reemplazar el placeholder WebView de BioDigital con una escena three.js real (`Anatomy3DScene`), el servicio wrapper y su env var quedaron sin callers.
+
+- [ ] `src/services/biodigital.ts` — wrapper del widget de BioDigital (URLs, injected JS, demo HTML). Ya no se importa desde `Anatomy3DViewer`. Verificar con grep y eliminar.
+- [ ] `EXPO_PUBLIC_BIODIGITAL_API_KEY` en `.env.example` — limpiar la entrada una vez eliminado el servicio.
+
+### Procedimiento
+
+1. `grep -r "biodigital\|BioDigital\|BIODIGITAL" src/` — confirmar 0 matches fuera del propio archivo.
+2. Eliminar en un commit separado con mensaje `chore(cleanup): remove biodigital service after 3D viewer rewrite`.
+3. Correr `tsc --noEmit` post-eliminacion.
