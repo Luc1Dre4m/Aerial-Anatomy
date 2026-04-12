@@ -22,10 +22,12 @@
     "expo-camera": "~17.0.10",
     "expo-dev-client": "~6.0.20",
     "expo-font": "~14.0.11",
+    "expo-gl": "~16.0.10",
     "expo-linear-gradient": "~15.0.8",
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
+    "expo-three": "^8.0.0",
     "i18next": "^26.0.3",
     "react": "19.1.0",
     "react-i18next": "^17.0.2",
@@ -39,11 +41,13 @@
     "react-native-svg": "15.12.1",
     "react-native-vision-camera": "^4.7.3",
     "react-native-webview": "13.15.0",
+    "three": "^0.166.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "@types/react": "~19.1.0",
+    "@types/three": "^0.183.1",
     "typescript": "~5.9.2"
   },
   "private": true
