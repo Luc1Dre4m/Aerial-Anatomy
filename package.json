@@ -50,5 +50,16 @@
     "@types/three": "^0.183.1",
     "typescript": "~5.9.2"
   },
+  "overrides": {
+    "expo-three": {
+      "expo-file-system": "~19.0.21"
+    },
+    "@expo/browser-polyfill": {
+      "expo-file-system": "~19.0.21"
+    },
+    "expo-asset-utils": {
+      "expo-file-system": "~19.0.21"
+    }
+  },
   "private": true
 }
