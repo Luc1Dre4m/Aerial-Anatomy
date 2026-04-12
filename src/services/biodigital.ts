@@ -12,28 +12,22 @@
 
 import { Platform } from 'react-native';
 
-// ⚠️ Replace with your actual BioDigital API key
-const BIODIGITAL_API_KEY = 'YOUR_BIODIGITAL_API_KEY';
+const BIODIGITAL_API_KEY = process.env.EXPO_PUBLIC_BIODIGITAL_API_KEY ?? '';
 
 const BIODIGITAL_BASE_URL = 'https://human.biodigital.com/widget';
 
-let isConfigured = false;
+const hasKey = BIODIGITAL_API_KEY.length > 0 && !BIODIGITAL_API_KEY.startsWith('YOUR_');
 
 /**
  * Initialize BioDigital service. Call once at app startup.
  */
 export function initBioDigital(): void {
-  if (isConfigured || !BIODIGITAL_API_KEY || BIODIGITAL_API_KEY.startsWith('YOUR_')) {
-    if (__DEV__) {
-      console.log('[BioDigital] Skipping init — no API key configured. Using 2D fallback.');
-    }
-    return;
-  }
-
-  isConfigured = true;
-
   if (__DEV__) {
-    console.log('[BioDigital] Configured successfully');
+    if (hasKey) {
+      console.log('[BioDigital] Configured from EXPO_PUBLIC_BIODIGITAL_API_KEY');
+    } else {
+      console.log('[BioDigital] No API key — using 2D fallback.');
+    }
   }
 }
 
@@ -41,7 +35,7 @@ export function initBioDigital(): void {
  * Check if BioDigital is properly configured.
  */
 export function isBioDigitalConfigured(): boolean {
-  return isConfigured;
+  return hasKey;
 }
 
 /**
@@ -49,7 +43,7 @@ export function isBioDigitalConfigured(): boolean {
  * Returns null if not configured.
  */
 export function getBioDigitalModelUrl(muscleNames: string[]): string | null {
-  if (!isConfigured) return null;
+  if (!hasKey) return null;
 
   const params = new URLSearchParams({
     key: BIODIGITAL_API_KEY,
