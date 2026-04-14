@@ -3,10 +3,15 @@ import { View, Image, StyleSheet } from 'react-native';
 import Svg, {
   G,
   Ellipse,
+  Path,
   Defs,
   RadialGradient,
   Stop,
   Rect,
+  Line,
+  Pattern,
+  Circle,
+  Text as SvgText,
 } from 'react-native-svg';
 import Animated, {
   useSharedValue,
@@ -25,11 +30,18 @@ import {
   BODY_HEIGHT,
 } from './bodyConstants';
 import { getMuscleZonesForView } from '../../data/muscleZones';
+import { getMusclePathsByView, BODY_SILHOUETTE_FRONT, BODY_SILHOUETTE_BACK } from '../../data/bodyPaths';
+import { BodyDefs } from './BodyDefs';
+import { MuscleLayer } from './MuscleLayer';
+import { colors } from '../../theme';
 
 const ANATOMY_FRONT = require('../../../assets/anatomy/muscle_front.png');
 const ANATOMY_BACK = require('../../../assets/anatomy/muscle_back.png');
 
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
+
+// Number of scan lines across the height
+const SCAN_LINE_COUNT = Math.floor(BODY_HEIGHT / 5);
 
 interface AnatomicalBodyProps {
   view: 'front' | 'back';
@@ -69,6 +81,7 @@ function AnatomicalBodyInner({
   const hasHighlight = highlightedRegion != null || highlightedRegionsFromIds.size > 0;
 
   const muscleZones = useMemo(() => getMuscleZonesForView(view), [view]);
+  const musclePaths = useMemo(() => getMusclePathsByView(view), [view]);
 
   const pulse = useSharedValue(0.45);
   useEffect(() => {
@@ -87,11 +100,39 @@ function AnatomicalBodyInner({
     opacity: pulse.value,
   }));
 
+  // Find selected muscle zone center for label callout
+  const selectedZone = useMemo(() => {
+    if (!selectedMuscleId) return null;
+    const zone = muscleZones.find((mz) => mz.muscleId === selectedMuscleId);
+    if (!zone) return null;
+    const muscle = getMuscleById(selectedMuscleId);
+    return { ...zone, name: muscle?.name_es ?? selectedMuscleId };
+  }, [selectedMuscleId, muscleZones]);
+
+  // Determine if a muscle path should be highlighted/dimmed
+  const getPathState = (pathId: string) => {
+    if (selectedMuscleId) {
+      return {
+        highlighted: pathId === selectedMuscleId,
+        dimmed: pathId !== selectedMuscleId,
+      };
+    }
+    if (hasHighlight) {
+      const pathMuscle = getMuscleById(pathId);
+      const pathRegion = pathMuscle?.region;
+      const isHighlighted = pathRegion === highlightedRegion || (pathRegion ? highlightedRegionsFromIds.has(pathRegion) : false);
+      return { highlighted: isHighlighted, dimmed: !isHighlighted };
+    }
+    return { highlighted: false, dimmed: false };
+  };
+
+  const silhouettePath = view === 'front' ? BODY_SILHOUETTE_FRONT : BODY_SILHOUETTE_BACK;
+
   return (
     <View style={styles.container}>
       <Image
         source={view === 'front' ? ANATOMY_FRONT : ANATOMY_BACK}
-        style={[StyleSheet.absoluteFill, { opacity: bodyOpacity }]}
+        style={[StyleSheet.absoluteFill, { opacity: bodyOpacity * 0.5 }]}
         resizeMode="contain"
       />
       <Svg
@@ -100,32 +141,85 @@ function AnatomicalBodyInner({
         pointerEvents={onRegionPress || onMusclePress ? 'box-none' : 'none'}
       >
         <Defs>
+          {/* Tech overlay patterns */}
+          <Pattern id="dotGrid" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+            <Circle cx="4" cy="4" r="0.4" fill={colors.accent.primary} fillOpacity="0.15" />
+          </Pattern>
+          <Pattern id="scanLines" x="0" y="0" width={BODY_WIDTH.toString()} height="5" patternUnits="userSpaceOnUse">
+            <Line x1="0" y1="4.5" x2={BODY_WIDTH.toString()} y2="4.5" stroke={colors.accent.primary} strokeWidth="0.3" strokeOpacity="0.06" />
+          </Pattern>
+
           <RadialGradient id="vignette" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
-            <Stop offset="60%" stopColor="#000" stopOpacity="0" />
-            <Stop offset="100%" stopColor="#000" stopOpacity="0.6" />
+            <Stop offset="55%" stopColor="#000" stopOpacity="0" />
+            <Stop offset="100%" stopColor="#000" stopOpacity="0.65" />
           </RadialGradient>
           <RadialGradient id="glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
             <Stop offset="0%" stopColor="#D4A843" stopOpacity="0.9" />
             <Stop offset="60%" stopColor="#D4A843" stopOpacity="0.35" />
             <Stop offset="100%" stopColor="#D4A843" stopOpacity="0" />
           </RadialGradient>
-          <RadialGradient id="sheen" cx="50%" cy="20%" r="80%" fx="50%" fy="20%">
-            <Stop offset="0%" stopColor="#FFF" stopOpacity="0.08" />
+          <RadialGradient id="sheen" cx="50%" cy="18%" r="80%" fx="50%" fy="18%">
+            <Stop offset="0%" stopColor="#FFF" stopOpacity="0.06" />
             <Stop offset="100%" stopColor="#FFF" stopOpacity="0" />
           </RadialGradient>
         </Defs>
 
+        {/* Gradient definitions for muscle fills */}
+        <BodyDefs />
+
+        {/* Silhouette — subtle body shape base */}
+        <Path
+          d={silhouettePath}
+          fill="url(#silhouette-fill)"
+          stroke={colors.accent.primary}
+          strokeWidth={0.3}
+          strokeOpacity={0.12}
+          pointerEvents="none"
+        />
+
+        {/* Muscle paths layer — gradient-filled anatomical contours */}
+        <G pointerEvents="none">
+          {musclePaths.map((mp) => {
+            const state = getPathState(mp.id);
+            return (
+              <MuscleLayer
+                key={`${mp.id}-${mp.side}`}
+                pathDef={mp}
+                view={view}
+                highlighted={state.highlighted}
+                highlightColor={state.highlighted ? '#D4A843' : undefined}
+                dimmed={state.dimmed}
+              />
+            );
+          })}
+        </G>
+
+        {/* Tech overlay — dot grid */}
+        <Rect
+          x={0} y={0}
+          width={BODY_WIDTH} height={BODY_HEIGHT}
+          fill="url(#dotGrid)"
+          pointerEvents="none"
+          opacity={0.3}
+        />
+
+        {/* Tech overlay — scan lines */}
+        <Rect
+          x={0} y={0}
+          width={BODY_WIDTH} height={BODY_HEIGHT}
+          fill="url(#scanLines)"
+          pointerEvents="none"
+        />
+
         {/* Sheen — subtle highlight on top of figure */}
         <Rect
-          x={0}
-          y={0}
-          width={BODY_WIDTH}
-          height={BODY_HEIGHT}
+          x={0} y={0}
+          width={BODY_WIDTH} height={BODY_HEIGHT}
           fill="url(#sheen)"
           pointerEvents="none"
         />
 
-        {/* Region zones layer — fallback targets + highlight */}
+        {/* Region zones layer — fallback tap targets */}
         <G>
           {BODY_ZONES.map((zone, index) => {
             const pos = view === 'front' ? zone.front : zone.back;
@@ -149,13 +243,10 @@ function AnatomicalBodyInner({
               strokeWidth = 2;
             } else if (isRegionHighlighted) {
               fill = regionColor;
-              fillOpacity = 0.32;
+              fillOpacity = 0.2;
               stroke = regionColor;
-              strokeOpacity = 0.9;
-              strokeWidth = 2;
-            } else if (hasHighlight) {
-              fill = 'transparent';
-              fillOpacity = 0;
+              strokeOpacity = 0.7;
+              strokeWidth = 1.5;
             }
 
             const tappable = showInteractionZones && !!onRegionPress;
@@ -191,17 +282,17 @@ function AnatomicalBodyInner({
                 rx={mz.ellipse.rx}
                 ry={mz.ellipse.ry}
                 fill={isSelected ? '#D4A843' : 'transparent'}
-                fillOpacity={isSelected ? 0.28 : 0}
+                fillOpacity={isSelected ? 0.18 : 0}
                 stroke={isSelected ? '#F5E6C4' : 'transparent'}
-                strokeWidth={isSelected ? 1.5 : 0}
-                strokeOpacity={isSelected ? 0.9 : 0}
+                strokeWidth={isSelected ? 1.2 : 0}
+                strokeOpacity={isSelected ? 0.8 : 0}
                 onPress={tappable ? () => onMusclePress!(mz.muscleId) : undefined}
               />
             );
           })}
         </G>
 
-        {/* Pulse glow on selected muscle (top layer, not tappable) */}
+        {/* Pulse glow on selected muscle */}
         {selectedMuscleId && (
           <G pointerEvents="none">
             {muscleZones
@@ -220,12 +311,65 @@ function AnatomicalBodyInner({
           </G>
         )}
 
+        {/* Label callout with leader line */}
+        {selectedZone && (
+          <G pointerEvents="none">
+            {(() => {
+              const cx = selectedZone.ellipse.cx;
+              const cy = selectedZone.ellipse.cy;
+              // Anchor label to the left or right of center
+              const anchorX = cx < BODY_WIDTH / 2 ? 18 : BODY_WIDTH - 18;
+              const anchorY = Math.max(20, Math.min(BODY_HEIGHT - 20, cy));
+              return (
+                <>
+                  <Line
+                    x1={cx} y1={cy}
+                    x2={anchorX} y2={anchorY}
+                    stroke="#D4A843"
+                    strokeWidth={0.6}
+                    strokeOpacity={0.7}
+                    strokeDasharray="2,2"
+                  />
+                  <Circle cx={cx} cy={cy} r={2} fill="#D4A843" fillOpacity={0.9} />
+                  <Circle cx={anchorX} cy={anchorY} r={1.5} fill="#D4A843" fillOpacity={0.8} />
+                  <SvgText
+                    x={anchorX}
+                    y={anchorY - 6}
+                    fill="#F5E6C4"
+                    fontSize={7}
+                    fontWeight="600"
+                    textAnchor={cx < BODY_WIDTH / 2 ? 'start' : 'end'}
+                    opacity={0.9}
+                  >
+                    {selectedZone.name}
+                  </SvgText>
+                </>
+              );
+            })()}
+          </G>
+        )}
+
+        {/* Measurement tick marks along left edge */}
+        <G pointerEvents="none" opacity={0.08}>
+          {Array.from({ length: Math.floor(BODY_HEIGHT / 20) }, (_, i) => {
+            const y = i * 20;
+            const long = i % 5 === 0;
+            return (
+              <Line
+                key={`tick-${i}`}
+                x1={0} y1={y}
+                x2={long ? 8 : 4} y2={y}
+                stroke={colors.accent.primary}
+                strokeWidth={0.5}
+              />
+            );
+          })}
+        </G>
+
         {/* Vignette overlay — frames the figure */}
         <Rect
-          x={0}
-          y={0}
-          width={BODY_WIDTH}
-          height={BODY_HEIGHT}
+          x={0} y={0}
+          width={BODY_WIDTH} height={BODY_HEIGHT}
           fill="url(#vignette)"
           pointerEvents="none"
         />
