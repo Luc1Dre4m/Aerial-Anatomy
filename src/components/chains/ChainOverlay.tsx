@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   playBtnText: { ...typography.body.regular, fontWeight: '600' },
   bodyContainer: {
-    width: '100%', aspectRatio: 300 / 420, maxHeight: 440,
+    width: '100%', aspectRatio: 300 / 460, maxHeight: 440,
     alignSelf: 'center', backgroundColor: colors.bg.primary, borderRadius: 16, overflow: 'hidden',
   },
   legend: { gap: spacing.xs },

@@ -301,8 +301,6 @@ const styles = StyleSheet.create({
   },
   bodyFace: {
     ...StyleSheet.absoluteFillObject,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
     backfaceVisibility: 'hidden',
   },
   swipeHint: {
