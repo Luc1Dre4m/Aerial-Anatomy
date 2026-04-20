@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getMuscleById, REGION_LABELS } from '../data/muscles';
 import { useAppStore } from '../store/useAppStore';
+import { hapticSelection } from '../hooks/useHaptic';
 import { AuthorCredit } from '../components/ui/AuthorCredit';
 import { InjuryPrevention } from '../components/muscles/InjuryPrevention';
 import { getPreventionForRegion } from '../data/injuryPrevention';
@@ -56,6 +57,15 @@ export function MuscleDetailScreen() {
 
   const isFavorite = useAppStore((s) => s.favoriteMuscles.includes(route.params?.muscleId ?? ''));
   const toggleFavorite = useAppStore((s) => s.toggleFavoriteMuscle);
+  const markVisited = useAppStore((s) => s.markMuscleVisited);
+  const addRecent = useAppStore((s) => s.addRecentMuscle);
+
+  useEffect(() => {
+    if (muscle) {
+      markVisited(muscle.id);
+      addRecent(muscle.id);
+    }
+  }, [muscle?.id]);
 
   if (!muscle) return <NotFoundView />;
 
@@ -80,7 +90,7 @@ export function MuscleDetailScreen() {
           <View style={styles.regionBadge}>
             <Text style={styles.regionText}>{regionLabel}</Text>
           </View>
-          <TouchableOpacity onPress={() => toggleFavorite(muscle.id)} style={styles.favBtn}>
+          <TouchableOpacity onPress={() => { hapticSelection(); toggleFavorite(muscle.id); }} style={styles.favBtn}>
             <MaterialCommunityIcons
               name={isFavorite ? 'heart' : 'heart-outline'}
               size={22}

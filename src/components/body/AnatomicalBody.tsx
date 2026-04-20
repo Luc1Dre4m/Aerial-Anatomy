@@ -34,6 +34,7 @@ import { getMusclePathsByView, BODY_SILHOUETTE_FRONT, BODY_SILHOUETTE_BACK } fro
 import { BodyDefs } from './BodyDefs';
 import { MuscleLayer } from './MuscleLayer';
 import { colors } from '../../theme';
+import { hapticLight, hapticMedium } from '../../hooks/useHaptic';
 
 const ANATOMY_FRONT = require('../../../assets/anatomy/muscle_front.png');
 const ANATOMY_BACK = require('../../../assets/anatomy/muscle_back.png');
@@ -263,7 +264,7 @@ function AnatomicalBodyInner({
                 stroke={stroke}
                 strokeWidth={strokeWidth}
                 strokeOpacity={strokeOpacity}
-                onPress={tappable ? () => onRegionPress!(zone.region) : undefined}
+                onPress={tappable ? () => { hapticLight(); onRegionPress!(zone.region); } : undefined}
               />
             );
           })}
@@ -286,7 +287,7 @@ function AnatomicalBodyInner({
                 stroke={isSelected ? '#F5E6C4' : 'transparent'}
                 strokeWidth={isSelected ? 1.2 : 0}
                 strokeOpacity={isSelected ? 0.8 : 0}
-                onPress={tappable ? () => onMusclePress!(mz.muscleId) : undefined}
+                onPress={tappable ? () => { hapticMedium(); onMusclePress!(mz.muscleId); } : undefined}
               />
             );
           })}

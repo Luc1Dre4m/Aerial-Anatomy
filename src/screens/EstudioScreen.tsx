@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Animated, Easing, StyleSheet 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { LanguageToggle } from '../components/ui';
+import { LanguageToggle, StreakBadge } from '../components/ui';
 import { AuthorCredit } from '../components/ui/AuthorCredit';
 import { FlashCard } from '../components/study/FlashCard';
 import { QuizCard } from '../components/study/QuizCard';
@@ -15,6 +15,7 @@ import { getMovementById } from '../data/movements';
 import { useAppStore } from '../store/useAppStore';
 import { Muscle } from '../utils/types';
 import { colors, typography, spacing } from '../theme';
+import { hapticLight, hapticSuccess } from '../hooks/useHaptic';
 
 type StudyMode = 'menu' | 'flashcards' | 'quiz' | 'results' | 'spaced' | 'favorites' | 'bodyQuiz';
 
@@ -41,6 +42,7 @@ export function EstudioScreen() {
   const navigation = useNavigation<any>();
   const favMuscles = useAppStore((s) => s.favoriteMuscles);
   const favMovements = useAppStore((s) => s.favoriteMovements);
+  const recordStudySession = useAppStore((s) => s.recordStudySession);
 
   const [mode, setMode] = useState<StudyMode>('menu');
   const [cardIndex, setCardIndex] = useState(0);
@@ -102,7 +104,10 @@ export function EstudioScreen() {
   const handleQuizSelect = useCallback((muscleId: string) => {
     setSelectedAnswer(muscleId);
     if (muscleId === currentQuizMuscle?.id) {
+      hapticSuccess();
       setScore((s) => s + 1);
+    } else {
+      hapticLight();
     }
   }, [currentQuizMuscle]);
 
@@ -112,9 +117,10 @@ export function EstudioScreen() {
       setSelectedAnswer(null);
     } else {
       setQuizTotal(QUIZ_COUNT);
+      recordStudySession();
       setMode('results');
     }
-  }, [quizIndex]);
+  }, [quizIndex, recordStudySession]);
 
   const handleRestart = useCallback(() => {
     setMode('menu');
@@ -132,7 +138,10 @@ export function EstudioScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         <ScrollView contentContainerStyle={styles.menuContent} showsVerticalScrollIndicator={false}>
-          <LanguageToggle />
+          <View style={styles.headerRow}>
+            <LanguageToggle />
+            <StreakBadge />
+          </View>
           <Text style={styles.title}>{t('study.title')}</Text>
           <Text style={styles.subtitle}>{t('screens.estudio.description')}</Text>
 
@@ -397,6 +406,7 @@ export function EstudioScreen() {
             onFinish={(finalScore, total) => {
               setScore(finalScore);
               setQuizTotal(total);
+              recordStudySession();
               setMode('results');
             }}
           />
@@ -472,6 +482,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
     gap: spacing.lg,
     flexGrow: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     ...typography.heading.h1,

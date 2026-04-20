@@ -20,6 +20,7 @@ import { MovementExecution } from '../components/movements/MovementExecution';
 import { getSpottingForMovement } from '../data/spottingGuide';
 import { MuscleRole } from '../utils/types';
 import { useAppStore } from '../store/useAppStore';
+import { hapticSelection } from '../hooks/useHaptic';
 import { GradientDivider } from '../components/ui/GradientDivider';
 import { AnimatedTitle } from '../components/ui/AnimatedTitle';
 import { NotFoundView } from '../components/ui/NotFoundView';
@@ -73,7 +74,7 @@ export function MovementDetailScreen() {
         </TouchableOpacity>
         <View style={styles.topBarRight}>
           <LevelBadge level={movement.level} />
-          <TouchableOpacity onPress={() => toggleFavorite(movement.id)} style={styles.favBtn} accessibilityRole="button" accessibilityLabel={t('common.toggleFavorite')}>
+          <TouchableOpacity onPress={() => { hapticSelection(); toggleFavorite(movement.id); }} style={styles.favBtn} accessibilityRole="button" accessibilityLabel={t('common.toggleFavorite')}>
             <MaterialCommunityIcons
               name={isFavorite ? 'heart' : 'heart-outline'}
               size={22}
