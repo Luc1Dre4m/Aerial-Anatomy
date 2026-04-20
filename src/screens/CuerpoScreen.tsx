@@ -1,20 +1,26 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Animated, ScrollView, StyleSheet } from 'react-native';
+import React, { useState, useRef, useCallback, Suspense } from 'react';
+import { View, Text, TouchableOpacity, Pressable, Animated, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { LanguageToggle, AuthorCredit, GlobalSearch } from '../components/ui';
+import { LanguageToggle, AuthorCredit, GlobalSearch, StreakBadge } from '../components/ui';
 import { MuscleOfTheDay } from '../components/ui/MuscleOfTheDay';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { BodyMap } from '../components/body/BodyMap';
 import { ZoomableBody } from '../components/body/ZoomableBody';
 import { MuscleTooltip } from '../components/body/MuscleTooltip';
-import { Anatomy3DViewer } from '../components/body/Anatomy3DViewer';
 import { ViewModeToggle } from '../components/body/ViewModeToggle';
+
+const Anatomy3DViewer = React.lazy(() =>
+  import('../components/body/Anatomy3DViewer').then((m) => ({ default: m.Anatomy3DViewer })),
+);
 import { getMusclesByRegion, REGION_LABELS } from '../data/muscles';
 import { MuscleRegion } from '../utils/types';
 import { AnimatedTitle } from '../components/ui/AnimatedTitle';
+import { useProgress } from '../hooks/useProgress';
+import { useAppStore } from '../store/useAppStore';
+import { getMuscleById } from '../data/muscles';
 import { colors, typography, spacing } from '../theme';
 
 export function CuerpoScreen() {
@@ -86,12 +92,17 @@ export function CuerpoScreen() {
   });
 
   const regionMuscles = selectedRegion ? getMusclesByRegion(selectedRegion) : [];
+  const { totalVisited, totalMuscles, overallRatio } = useProgress();
+  const recentMuscles = useAppStore((s) => s.recentMuscles);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <LanguageToggle />
+          <View style={styles.headerLeft}>
+            <LanguageToggle />
+            <StreakBadge compact />
+          </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.aboutBtn}
@@ -124,13 +135,15 @@ export function CuerpoScreen() {
       <View style={styles.bodyContainer}>
         {viewMode === '3d' ? (
           <ErrorBoundary>
-            <Anatomy3DViewer
-              highlightedMuscles={tooltipMuscleId ? [tooltipMuscleId] : []}
-              onMuscleSelect={(muscleId) => {
-                setSelectedRegion(null);
-                setTooltipMuscleId(muscleId);
-              }}
-            />
+            <Suspense fallback={<ActivityIndicator size="large" color={colors.accent.primary} style={StyleSheet.absoluteFill} />}>
+              <Anatomy3DViewer
+                highlightedMuscles={tooltipMuscleId ? [tooltipMuscleId] : []}
+                onMuscleSelect={(muscleId) => {
+                  setSelectedRegion(null);
+                  setTooltipMuscleId(muscleId);
+                }}
+              />
+            </Suspense>
           </ErrorBoundary>
         ) : (
           <>
@@ -242,6 +255,38 @@ export function CuerpoScreen() {
           <View style={styles.motdContainer}>
             <MuscleOfTheDay onPress={(id) => navigation.navigate('MuscleDetail', { muscleId: id })} />
           </View>
+          {totalVisited > 0 && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${Math.round(overallRatio * 100)}%` }]} />
+              </View>
+              <Text style={styles.progressText}>
+                {t('body.explored', { visited: totalVisited, total: totalMuscles })}
+              </Text>
+            </View>
+          )}
+          {recentMuscles.length > 0 && (
+            <View style={styles.recentSection}>
+              <Text style={styles.recentTitle}>{t('body.recent')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentScroll}>
+                {recentMuscles.slice(0, 6).map((id) => {
+                  const m = getMuscleById(id);
+                  if (!m) return null;
+                  return (
+                    <TouchableOpacity
+                      key={id}
+                      style={styles.recentChip}
+                      onPress={() => navigation.navigate('MuscleDetail', { muscleId: id })}
+                    >
+                      <Text style={styles.recentChipText}>
+                        {lang === 'es' ? m.name_es : m.name_en}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
         </View>
       )}
 
@@ -276,6 +321,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   headerActions: {
     flexDirection: 'row',
@@ -369,5 +419,55 @@ const styles = StyleSheet.create({
   motdContainer: {
     width: '100%',
     marginTop: spacing.md,
+  },
+  progressContainer: {
+    width: '100%',
+    marginTop: spacing.md,
+    gap: spacing.xs,
+  },
+  progressBar: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.bg.tertiary,
+    overflow: 'hidden' as const,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: colors.accent.primary,
+  },
+  progressText: {
+    ...typography.body.small,
+    color: colors.text.muted,
+    textAlign: 'center' as const,
+    fontSize: 11,
+  },
+  recentSection: {
+    width: '100%',
+    marginTop: spacing.md,
+    gap: spacing.xs,
+  },
+  recentTitle: {
+    ...typography.label.regular,
+    color: colors.accent.primary,
+    fontSize: 10,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+  },
+  recentScroll: {
+    gap: spacing.sm,
+  },
+  recentChip: {
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  recentChipText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    fontSize: 12,
   },
 });

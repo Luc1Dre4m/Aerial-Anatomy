@@ -14,3 +14,4 @@ export { PremiumBanner } from './PremiumBanner';
 export { GlobalSearch } from './GlobalSearch';
 export { NotFoundView } from './NotFoundView';
 export { SkeletonLoader } from './SkeletonLoader';
+export { StreakBadge } from './StreakBadge';
