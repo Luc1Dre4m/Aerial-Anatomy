@@ -40,6 +40,10 @@ interface AppState {
   recordStudySession: () => void;
   motionSessions: MotionSession[];
   addMotionSession: (session: MotionSession) => void;
+  visitedMuscles: string[];
+  markMuscleVisited: (id: string) => void;
+  recentMuscles: string[];
+  addRecentMuscle: (id: string) => void;
 }
 
 export interface TrainingEntry {
@@ -111,6 +115,18 @@ export const useAppStore = create<AppState>()(
       addMotionSession: (session) => {
         set({ motionSessions: [session, ...get().motionSessions].slice(0, 50) });
       },
+      visitedMuscles: [],
+      markMuscleVisited: (id) => {
+        const current = get().visitedMuscles;
+        if (!current.includes(id)) {
+          set({ visitedMuscles: [...current, id] });
+        }
+      },
+      recentMuscles: [],
+      addRecentMuscle: (id) => {
+        const current = get().recentMuscles.filter((m) => m !== id);
+        set({ recentMuscles: [id, ...current].slice(0, 20) });
+      },
       studyStreak: 0,
       lastStudyDate: null,
       recordStudySession: () => {
@@ -141,6 +157,8 @@ export const useAppStore = create<AppState>()(
         motionSessions: state.motionSessions,
         studyStreak: state.studyStreak,
         lastStudyDate: state.lastStudyDate,
+        visitedMuscles: state.visitedMuscles,
+        recentMuscles: state.recentMuscles,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.language) {
