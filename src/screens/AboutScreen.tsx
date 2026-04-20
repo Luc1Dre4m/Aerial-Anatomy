@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Linking, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -43,6 +43,18 @@ export function AboutScreen() {
           <Text style={styles.disclaimerIcon}>⚕️</Text>
           <Text style={styles.disclaimerTitle}>{t('about.disclaimer')}</Text>
           <Text style={styles.disclaimerText}>{t('about.disclaimerText')}</Text>
+        </View>
+
+        {/* Anatomy images attribution — CC BY-SA 3.0 */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t('about.anatomyImages')}</Text>
+          <Text style={styles.creditLine}>{t('about.anatomyAttribution')}</Text>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(t('about.anatomyLicenseUrl'))}
+            accessibilityRole="link"
+          >
+            <Text style={styles.licenseLink}>{t('about.anatomyLicense')}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Credits */}
@@ -137,5 +149,11 @@ const styles = StyleSheet.create({
   creditLine: {
     ...typography.body.small,
     color: colors.text.muted,
+  },
+  licenseLink: {
+    ...typography.body.small,
+    color: colors.accent.primary,
+    textDecorationLine: 'underline' as const,
+    marginTop: 4,
   },
 });
