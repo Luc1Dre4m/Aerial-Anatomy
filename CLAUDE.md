@@ -39,6 +39,8 @@ agent_docs/
 7. **Nota de seguridad obligatoria** en cada movimiento.
 8. **Credito de autora**: "Rubi Lueiza Fuentes - Instructorado de Artes Aereas Circenses" en About y footer.
 9. **Atribucion CC BY-SA 3.0** para `assets/anatomy/` visible en `AboutScreen`.
+10. **Engagement minimo**: cada pantalla principal debe tener al menos un call-to-action que invite al usuario a explorar mas.
+11. **Haptic feedback**: usar `expo-haptics` en interacciones de seleccion (body map, listas, quiz). Impact light para browse, medium para seleccion, success para completar.
 
 ## Patrones obligatorios de React Native
 
@@ -100,23 +102,45 @@ setX((prev) => { const next = new Map(prev); next.set(id, val); return next; });
 - **Cambiar auth, registro, o paywall** sin plan previo.
 - **Modificar migraciones de Zustand persist**.
 
+## Testing
+
+- Tests obligatorios para funciones de data layer (`src/data/`).
+- Antes de PR: `npm test` debe pasar.
+- Minimo: unit tests para helpers de busqueda y filtrado (`getMuscleById`, `getMovementById`, `getChainById`, `getMuscleZonesForView`, `getMusclePathsByView`).
+- Archivos de test en `src/data/__tests__/`.
+
+## CI
+
+- GitHub Action en `.github/workflows/ci.yml` corre `tsc --noEmit` + `npm test` en cada push.
+- No se mergea si CI falla.
+
 ## Workflow de calibracion del BodyMap
 
-ViewBox `0 0 300 420`. Coordenadas de `BODY_ZONES` en `src/components/body/bodyConstants.ts` se calibran visualmente.
+ViewBox `0 0 300 460`. Coordenadas de `BODY_ZONES` en `src/components/body/bodyConstants.ts` se calibran visualmente.
 
 Para recalibrar: activar `showInteractionZones` con `regionColorOverrides` pintando cada zona distinta, screenshot, ajustar `cx/cy/rx/ry`. Cada ajuste en commit separado con prefijo `bodymap(calib):`.
 
 Archivos clave que deben mantenerse sincronizados:
-- `src/components/body/AnatomicalBody.tsx` — render Image + Svg overlay
-- `src/components/body/bodyConstants.ts` — BODY_ZONES, BODY_VIEWBOX
-- `src/components/body/BodyMap.tsx` — aspectRatio del contenedor
-- `src/components/chains/ChainOverlay.tsx` — usa el mismo aspectRatio
+- `src/components/body/AnatomicalBody.tsx` — render Image + Svg overlay + muscle paths + tech overlay
+- `src/components/body/bodyConstants.ts` — BODY_ZONES, BODY_VIEWBOX (300x460)
+- `src/components/body/BodyMap.tsx` — aspectRatio del contenedor (300/460)
+- `src/components/chains/ChainOverlay.tsx` — usa el mismo aspectRatio (300/460)
+- `src/data/bodyPaths.ts` — Bezier paths de musculos, silhouettes, detail strokes
+- `src/components/body/BodyDefs.tsx` — gradientes SVG (muscle-vertical, muscle-convex, etc.)
+- `src/components/body/MuscleLayer.tsx` — renderizado individual de path con gradient + highlight
 
-## Estetica de figuras humanas
+## Estetica visual
 
+### Body Map 2D — "Computational Anatomy"
+Estilo de arte computacional: precision geometrica + data-viz aesthetics + tono medico profesional. Capas de renderizado (fondo a frente): PNG base (0.5 opacity) → silhouette path → muscle paths con gradient fills → tech overlay (dot grid + scan lines) → region/muscle zones → glow pulse → label callout → vignette. **No modificar el estilo sin plan previo — es el diferenciador visual de la app.**
+
+### Figuras humanas en movimientos
 Todas las figuras humanas pasan por `src/components/movements/PosedFigure.tsx` (estetica yoga-app: limbs como strokes redondeados con gradiente morado, torso Path con Bezier, head con radial gradient). `StickFigure` es un delegate fino. **Ningun componente nuevo debe dibujar figuras humanas con su propio sistema.**
 
 Poses en `src/data/poses.ts` via `PoseJoints`. Para movimiento nuevo, agregar key a `PHASE_POSE_MAP`.
+
+### Direccion de marca — "Medical Precision + Art Deco"
+Evolucion futura del tema visual: mantener oscuro+dorado como base, incorporar bordes decorativos sutiles, tipografia serif mas expresiva en titulos anatomicos, iconos custom con lineas geometricas, spring animations para transiciones.
 
 ## Comandos
 
@@ -132,12 +156,13 @@ eas build --platform android --profile preview               # REQUIERE permiso 
 ## Definition of Done
 
 1. `tsc --noEmit` limpio.
-2. App arranca en dev sin warnings nuevos.
-3. UI tocada → descripcion visual o screenshot.
-4. Logica tocada → caso de prueba manual descrito.
-5. Commit message en formato `area(scope): descripcion`.
-6. Deuda tecnica anotada en `agent_docs/followups/`.
-7. Si tocaste algo de "permiso explicito", confirmaste antes.
+2. `npm test` pasa (si existen tests para el area tocada).
+3. App arranca en dev sin warnings nuevos.
+4. UI tocada → descripcion visual o screenshot.
+5. Logica tocada → caso de prueba manual descrito.
+6. Commit message en formato `area(scope): descripcion`.
+7. Deuda tecnica anotada en `agent_docs/followups/`.
+8. Si tocaste algo de "permiso explicito", confirmaste antes.
 
 ## Docs de referencia
 
