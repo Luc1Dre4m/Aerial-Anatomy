@@ -1,32 +1,31 @@
-import React, { useRef, useCallback } from 'react';
-import { Animated, TouchableOpacity, TouchableOpacityProps, GestureResponderEvent } from 'react-native';
+import React, { useCallback } from 'react';
+import { TouchableOpacity, TouchableOpacityProps, GestureResponderEvent } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
 interface AnimatedPressableProps extends TouchableOpacityProps {
   scaleValue?: number;
 }
 
 export function AnimatedPressable({ scaleValue = 0.97, style, children, onPressIn, onPressOut, ...props }: AnimatedPressableProps) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const scale = useSharedValue(1);
 
   const handlePressIn = useCallback((e: GestureResponderEvent) => {
-    Animated.spring(scale, {
-      toValue: scaleValue,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
-    }).start();
+    scale.value = withSpring(scaleValue, { damping: 14, stiffness: 250 });
     onPressIn?.(e);
-  }, [scaleValue, onPressIn]);
+  }, [scale, scaleValue, onPressIn]);
 
   const handlePressOut = useCallback((e: GestureResponderEvent) => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 40,
-      bounciness: 6,
-    }).start();
+    scale.value = withSpring(1, { damping: 10, stiffness: 180 });
     onPressOut?.(e);
-  }, [onPressOut]);
+  }, [scale, onPressOut]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   return (
     <TouchableOpacity
@@ -35,7 +34,7 @@ export function AnimatedPressable({ scaleValue = 0.97, style, children, onPressI
       onPressOut={handlePressOut}
       {...props}
     >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>
+      <Animated.View style={[style, animStyle]}>
         {children}
       </Animated.View>
     </TouchableOpacity>

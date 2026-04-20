@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  cancelAnimation,
+  runOnJS,
+  SharedValue,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ExecutionPhase } from '../../utils/types';
@@ -24,31 +34,39 @@ const BREATHING_LABELS: Record<ExecutionPhase['breathing'], { es: string; en: st
   natural: { es: 'Natural', en: 'Natural' },
 };
 
+function SegmentFill({ progress }: { progress: SharedValue<number> }) {
+  const style = useAnimatedStyle(() => ({
+    width: `${Math.min(100, progress.value * 100)}%`,
+  }));
+  return <Animated.View style={[styles.segmentFill, style]} />;
+}
+
 export function MovementExecution({ phases, movementId, onMusclePress }: MovementExecutionProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
   const [currentPhase, setCurrentPhase] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const breathPulse = useRef(new Animated.Value(1)).current;
+
+  const fadeAnim = useSharedValue(1);
+  const slideAnim = useSharedValue(0);
+  const progressAnim = useSharedValue(0);
+  const breathPulse = useSharedValue(1);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionRef = useRef<'forward' | 'backward'>('forward');
 
   const phase = phases[currentPhase];
-  const totalDuration = phases.reduce((sum, p) => sum + (p.duration_seconds ?? 5), 0);
 
   // Pulsing breathing animation
   useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(breathPulse, { toValue: 1.15, duration: 1000, useNativeDriver: true }),
-        Animated.timing(breathPulse, { toValue: 1, duration: 1000, useNativeDriver: true }),
-      ])
+    breathPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.15, { duration: 1000 }),
+        withTiming(1, { duration: 1000 }),
+      ),
+      -1,
     );
-    pulse.start();
-    return () => pulse.stop();
+    return () => cancelAnimation(breathPulse);
   }, [breathPulse]);
 
   const goToPhase = useCallback((index: number) => {
@@ -57,17 +75,14 @@ export function MovementExecution({ phases, movementId, onMusclePress }: Movemen
     const slideOut = dir === 'forward' ? -30 : 30;
     const slideIn = dir === 'forward' ? 30 : -30;
 
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: slideOut, duration: 120, useNativeDriver: true }),
-    ]).start(() => {
-      setCurrentPhase(index);
-      progressAnim.setValue(0);
-      slideAnim.setValue(slideIn);
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
-      ]).start();
+    fadeAnim.value = withTiming(0, { duration: 120 });
+    slideAnim.value = withTiming(slideOut, { duration: 120 }, (finished) => {
+      if (!finished) return;
+      runOnJS(setCurrentPhase)(index);
+      progressAnim.value = 0;
+      slideAnim.value = slideIn;
+      fadeAnim.value = withTiming(1, { duration: 180 });
+      slideAnim.value = withTiming(0, { duration: 180 });
     });
   }, [fadeAnim, slideAnim, progressAnim, currentPhase]);
 
@@ -80,18 +95,15 @@ export function MovementExecution({ phases, movementId, onMusclePress }: Movemen
 
     const duration = (phases[currentPhase]?.duration_seconds ?? 5) * 1000;
 
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration,
-      useNativeDriver: false,
-    }).start();
+    progressAnim.value = 0;
+    progressAnim.value = withTiming(1, { duration });
 
     timerRef.current = setTimeout(() => {
       if (currentPhase < phases.length - 1) {
         goToPhase(currentPhase + 1);
       } else {
         setIsPlaying(false);
-        progressAnim.setValue(0);
+        progressAnim.value = 0;
       }
     }, duration);
 
@@ -103,7 +115,7 @@ export function MovementExecution({ phases, movementId, onMusclePress }: Movemen
   const togglePlay = () => {
     if (isPlaying) {
       setIsPlaying(false);
-      progressAnim.stopAnimation();
+      cancelAnimation(progressAnim);
     } else {
       if (currentPhase === phases.length - 1) {
         goToPhase(0);
@@ -113,6 +125,11 @@ export function MovementExecution({ phases, movementId, onMusclePress }: Movemen
       }
     }
   };
+
+  const phaseContentStyle = useAnimatedStyle(() => ({
+    opacity: fadeAnim.value,
+    transform: [{ translateX: slideAnim.value }],
+  }));
 
   const phaseName = lang === 'es' ? phase.name_es : phase.name_en;
   const phaseDesc = lang === 'es' ? phase.description_es : phase.description_en;
@@ -153,12 +170,7 @@ export function MovementExecution({ phases, movementId, onMusclePress }: Movemen
                   {isDone ? (
                     <View style={[styles.segmentFill, { width: '100%' }]} />
                   ) : isActive ? (
-                    <Animated.View style={[styles.segmentFill, {
-                      width: progressAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0%', '100%'],
-                      }),
-                    }]} />
+                    <SegmentFill progress={progressAnim} />
                   ) : null}
                 </View>
                 <Text style={[styles.segmentLabel, isActive && styles.segmentLabelActive]}>
@@ -182,10 +194,7 @@ export function MovementExecution({ phases, movementId, onMusclePress }: Movemen
       </View>
 
       {/* Phase content with slide animation */}
-      <Animated.View style={[
-        styles.phaseContent,
-        { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
-      ]}>
+      <Animated.View style={[styles.phaseContent, phaseContentStyle]}>
         <BreathingIndicator
           breathing={phase.breathing}
           breathingLabel={breathLabel}

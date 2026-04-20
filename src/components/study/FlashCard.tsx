@@ -1,8 +1,16 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { Muscle } from '../../utils/types';
 import { REGION_LABELS } from '../../data/muscles';
+import { hapticLight } from '../../hooks/useHaptic';
 import { colors, typography, spacing, shadows } from '../../theme';
 
 interface FlashCardProps {
@@ -13,7 +21,7 @@ export function FlashCard({ muscle }: FlashCardProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language as 'es' | 'en';
   const [flipped, setFlipped] = useState(false);
-  const flipAnim = useRef(new Animated.Value(0)).current;
+  const flipAnim = useSharedValue(0);
 
   const name = lang === 'es' ? muscle.name_es : muscle.name_en;
   const otherName = lang === 'es' ? muscle.name_en : muscle.name_es;
@@ -21,30 +29,28 @@ export function FlashCard({ muscle }: FlashCardProps) {
   const regionLabel = REGION_LABELS[muscle.region][lang];
 
   const handleFlip = useCallback(() => {
+    hapticLight();
     const toValue = flipped ? 0 : 1;
     setFlipped(!flipped);
-    Animated.timing(flipAnim, {
-      toValue,
-      duration: 400,
-      useNativeDriver: false,
-    }).start();
+    flipAnim.value = withTiming(toValue, { duration: 400 });
   }, [flipped, flipAnim]);
 
-  const frontRotateY = flipAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: ['0deg', '90deg', '180deg'],
+  const frontStyle = useAnimatedStyle(() => {
+    const rotateY = interpolate(flipAnim.value, [0, 0.5, 1], [0, 90, 180], Extrapolation.CLAMP);
+    const opacity = interpolate(flipAnim.value, [0, 0.49, 0.5, 1], [1, 1, 0, 0], Extrapolation.CLAMP);
+    return {
+      opacity,
+      transform: [{ perspective: 1000 }, { rotateY: `${rotateY}deg` }],
+    };
   });
-  const frontOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.49, 0.5, 1],
-    outputRange: [1, 1, 0, 0],
-  });
-  const backRotateY = flipAnim.interpolate({
-    inputRange: [0, 0.5, 0.51, 1],
-    outputRange: ['180deg', '90deg', '90deg', '0deg'],
-  });
-  const backOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.5, 0.51, 1],
-    outputRange: [0, 0, 1, 1],
+
+  const backStyle = useAnimatedStyle(() => {
+    const rotateY = interpolate(flipAnim.value, [0, 0.5, 0.51, 1], [180, 90, 90, 0], Extrapolation.CLAMP);
+    const opacity = interpolate(flipAnim.value, [0, 0.5, 0.51, 1], [0, 0, 1, 1], Extrapolation.CLAMP);
+    return {
+      opacity,
+      transform: [{ perspective: 1000 }, { rotateY: `${rotateY}deg` }],
+    };
   });
 
   return (
@@ -56,15 +62,7 @@ export function FlashCard({ muscle }: FlashCardProps) {
       accessibilityLabel={t('study.flipToReveal')}
     >
       {/* Front face */}
-      <Animated.View
-        style={[
-          styles.card,
-          {
-            opacity: frontOpacity,
-            transform: [{ perspective: 1000 }, { rotateY: frontRotateY }],
-          },
-        ]}
-      >
+      <Animated.View style={[styles.card, frontStyle]}>
         <View style={styles.glassOverlay} />
         <View style={styles.face}>
           <Text style={styles.label}>{t('study.whatIs')}</Text>
@@ -91,10 +89,7 @@ export function FlashCard({ muscle }: FlashCardProps) {
           styles.card,
           styles.cardBack,
           StyleSheet.absoluteFillObject,
-          {
-            opacity: backOpacity,
-            transform: [{ perspective: 1000 }, { rotateY: backRotateY }],
-          },
+          backStyle,
         ]}
       >
         <View style={styles.glassOverlay} />

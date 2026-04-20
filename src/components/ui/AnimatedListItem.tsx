@@ -1,5 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, ViewProps } from 'react-native';
+import React, { useEffect } from 'react';
+import { ViewProps } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+} from 'react-native-reanimated';
 
 interface AnimatedListItemProps extends ViewProps {
   index: number;
@@ -8,31 +14,22 @@ interface AnimatedListItemProps extends ViewProps {
 }
 
 export function AnimatedListItem({ index, delay = 60, style, children }: AnimatedListItemProps) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
 
   useEffect(() => {
     const itemDelay = Math.min(index, 8) * delay;
-    const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, itemDelay);
+    opacity.value = withDelay(itemDelay, withTiming(1, { duration: 300 }));
+    translateY.value = withDelay(itemDelay, withTiming(0, { duration: 300 }));
+  }, [index, delay, opacity, translateY]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
-    <Animated.View style={[style, { opacity, transform: [{ translateY }] }]}>
+    <Animated.View style={[style, animStyle]}>
       {children}
     </Animated.View>
   );

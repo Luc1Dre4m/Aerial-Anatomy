@@ -1,5 +1,9 @@
 import React from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  SharedValue,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ExecutionPhase } from '../../utils/types';
 import { colors, typography, spacing } from '../../theme';
@@ -16,7 +20,7 @@ interface BreathingIndicatorProps {
   breathingLabel: string;
   phaseLabel: string;
   durationSeconds?: number;
-  breathPulse: Animated.Value;
+  breathPulse: SharedValue<number>;
 }
 
 export const BreathingIndicator = React.memo(function BreathingIndicator({
@@ -28,9 +32,13 @@ export const BreathingIndicator = React.memo(function BreathingIndicator({
 }: BreathingIndicatorProps) {
   const info = BREATHING_ICONS[breathing];
 
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: breathPulse.value }],
+  }));
+
   return (
     <View style={[styles.container, { backgroundColor: info.bgColor }]}>
-      <Animated.View style={{ transform: [{ scale: breathPulse }] }}>
+      <Animated.View style={pulseStyle}>
         <MaterialCommunityIcons name={info.icon} size={28} color={info.color} />
       </Animated.View>
       <View>

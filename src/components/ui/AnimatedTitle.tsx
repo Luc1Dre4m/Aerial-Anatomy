@@ -1,5 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, TextStyle, StyleProp } from 'react-native';
+import React, { useEffect } from 'react';
+import { TextStyle, StyleProp } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 
 interface AnimatedTitleProps {
   text: string;
@@ -7,28 +12,21 @@ interface AnimatedTitleProps {
 }
 
 export function AnimatedTitle({ text, style }: AnimatedTitleProps) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(15)).current;
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(15);
 
   useEffect(() => {
-    const anim = Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]);
-    anim.start();
-    return () => anim.stop();
-  }, []);
+    opacity.value = withTiming(1, { duration: 400 });
+    translateY.value = withTiming(0, { duration: 400 });
+  }, [opacity, translateY]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
-    <Animated.Text style={[style, { opacity, transform: [{ translateY }] }]}>
+    <Animated.Text style={[style, animStyle]}>
       {text}
     </Animated.Text>
   );

@@ -1,5 +1,14 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Animated, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedReaction,
+  withDelay,
+  withTiming,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { FormScore } from '../../services/motionAnalysis';
@@ -39,42 +48,45 @@ export function FormScoreCard({
   const overallColor = getScoreColor(score.overall);
   const durationSec = Math.round(duration / 1000);
 
-  // Score reveal animations
-  const ringScale = useRef(new Animated.Value(0.8)).current;
-  const ringOpacity = useRef(new Animated.Value(0)).current;
-  const contentOpacity = useRef(new Animated.Value(0)).current;
-  const numberAnim = useRef(new Animated.Value(0)).current;
+  const ringScale = useSharedValue(0.5);
+  const ringOpacity = useSharedValue(0);
+  const contentOpacity = useSharedValue(0);
+  const numberAnim = useSharedValue(0);
   const [displayNumber, setDisplayNumber] = useState(0);
 
   useEffect(() => {
-    // Reset animated values
-    numberAnim.setValue(0);
+    ringScale.value = 0.5;
+    ringOpacity.value = 0;
+    contentOpacity.value = 0;
+    numberAnim.value = 0;
     setDisplayNumber(0);
-    ringScale.setValue(0.5);
-    ringOpacity.setValue(0);
-    contentOpacity.setValue(0);
 
-    // Ring entrance
-    Animated.parallel([
-      Animated.timing(ringOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
-      Animated.spring(ringScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }),
-    ]).start();
+    ringOpacity.value = withTiming(1, { duration: 300 });
+    ringScale.value = withSpring(1, { damping: 8, stiffness: 180 });
 
-    // Number counter
-    const listener = numberAnim.addListener(({ value }) => setDisplayNumber(Math.round(value)));
-    const counterAnim = Animated.sequence([
-      Animated.delay(250),
-      Animated.timing(numberAnim, { toValue: score.overall, duration: 800, useNativeDriver: false }),
-    ]);
-    counterAnim.start(() => {
-      Animated.timing(contentOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    });
+    numberAnim.value = withDelay(250, withTiming(score.overall, { duration: 800 }));
+    contentOpacity.value = withDelay(1050, withTiming(1, { duration: 300 }));
+  }, [score.overall, ringScale, ringOpacity, contentOpacity, numberAnim]);
 
-    return () => {
-      numberAnim.removeListener(listener);
-      counterAnim.stop();
-    };
-  }, [score.overall]);
+  // Sync number counter from UI thread to JS state
+  useAnimatedReaction(
+    () => Math.round(numberAnim.value),
+    (val, prev) => {
+      if (val !== prev) runOnJS(setDisplayNumber)(val);
+    },
+  );
+
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: ringOpacity.value,
+    transform: [{ scale: ringScale.value }],
+  }));
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+    width: '100%' as const,
+    alignItems: 'center' as const,
+    gap: spacing.lg,
+  }));
 
   return (
     <View style={styles.container}>
@@ -84,14 +96,14 @@ export function FormScoreCard({
       <Animated.View style={[
         styles.scoreRing,
         { borderColor: overallColor },
-        { opacity: ringOpacity, transform: [{ scale: ringScale }] },
+        ringStyle,
       ]}>
         <Text style={[styles.scoreNumber, { color: overallColor }]}>{displayNumber}</Text>
         <Text style={styles.scoreLabel}>{t(getScoreKey(score.overall))}</Text>
       </Animated.View>
 
       {/* Content fades in after number counter */}
-      <Animated.View style={{ opacity: contentOpacity, width: '100%', alignItems: 'center', gap: spacing.lg }}>
+      <Animated.View style={contentStyle}>
       {/* Duration */}
       <View style={styles.durationRow}>
         <MaterialCommunityIcons name="timer-outline" size={16} color={colors.text.muted} />

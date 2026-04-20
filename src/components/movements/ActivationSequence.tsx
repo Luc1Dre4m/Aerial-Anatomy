@@ -1,5 +1,14 @@
 import React, { useEffect, useCallback, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withSpring,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { MovementMuscle, MuscleRole } from '../../utils/types';
 import { getMuscleById } from '../../data/muscles';
@@ -38,42 +47,40 @@ const SequenceStep = React.memo(function SequenceStep({
   const isActive = index <= activeIndex;
   const isCurrent = index === activeIndex;
 
-  const opacity = useRef(new Animated.Value(0.3)).current;
-  const scale = useRef(new Animated.Value(0.95)).current;
-  const glowOpacity = useRef(new Animated.Value(0)).current;
+  const opacity = useSharedValue(0.3);
+  const scale = useSharedValue(0.95);
+  const glowOpacity = useSharedValue(0);
 
   useEffect(() => {
-    const enterAnim = Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: isActive ? 1 : 0.3,
-        duration: STEP_DURATION,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scale, {
-        toValue: isActive ? 1 : 0.95,
-        useNativeDriver: true,
-      }),
-    ]);
-    enterAnim.start();
+    opacity.value = withTiming(isActive ? 1 : 0.3, { duration: STEP_DURATION });
+    scale.value = withSpring(isActive ? 1 : 0.95);
 
-    let loopAnim: Animated.CompositeAnimation | undefined;
     if (isCurrent) {
-      loopAnim = Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.6, duration: 800, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.2, duration: 800, useNativeDriver: true }),
-        ])
+      glowOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.6, { duration: 800 }),
+          withTiming(0.2, { duration: 800 }),
+        ),
+        -1,
       );
-      loopAnim.start();
     } else {
-      glowOpacity.setValue(0);
+      cancelAnimation(glowOpacity);
+      glowOpacity.value = 0;
     }
 
     return () => {
-      enterAnim.stop();
-      loopAnim?.stop();
+      cancelAnimation(glowOpacity);
     };
-  }, [isActive, isCurrent]);
+  }, [isActive, isCurrent, opacity, scale, glowOpacity]);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
 
   if (!muscle) return null;
 
@@ -82,7 +89,7 @@ const SequenceStep = React.memo(function SequenceStep({
   const roleColor = ROLE_COLORS[mm.role];
 
   return (
-    <Animated.View style={[styles.stepContainer, { opacity, transform: [{ scale }] }]}>
+    <Animated.View style={[styles.stepContainer, containerStyle]}>
       <TouchableOpacity
         style={styles.stepTouchable}
         onPress={() => onPress?.(mm.muscle_id)}
@@ -93,7 +100,7 @@ const SequenceStep = React.memo(function SequenceStep({
 
         <View style={styles.orderWrapper}>
           {isCurrent && (
-            <Animated.View style={[styles.orderGlow, { backgroundColor: roleColor, opacity: glowOpacity }]} />
+            <Animated.View style={[styles.orderGlow, { backgroundColor: roleColor }, glowStyle]} />
           )}
           <View style={[styles.orderCircle, { borderColor: roleColor }]}>
             <Text style={[styles.orderText, { color: roleColor }]}>

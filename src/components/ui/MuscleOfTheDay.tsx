@@ -1,5 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { muscles, REGION_LABELS } from '../../data/muscles';
 import { AnimatedPressable } from './AnimatedPressable';
@@ -24,22 +31,25 @@ export function MuscleOfTheDay({ onPress }: MuscleOfTheDayProps) {
   const func = lang === 'es' ? muscle.primary_function_es : muscle.primary_function_en;
   const regionLabel = REGION_LABELS[muscle.region][lang];
 
-  const glowOpacity = useRef(new Animated.Value(0.3)).current;
+  const glowOpacity = useSharedValue(0.3);
 
   useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowOpacity, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
-        Animated.timing(glowOpacity, { toValue: 0.3, duration: 1500, useNativeDriver: true }),
-      ])
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.7, { duration: 1500 }),
+        withTiming(0.3, { duration: 1500 }),
+      ),
+      -1,
     );
-    anim.start();
-    return () => anim.stop();
-  }, []);
+  }, [glowOpacity]);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
 
   return (
     <View>
-      <Animated.View style={[styles.glow, { opacity: glowOpacity }]} />
+      <Animated.View style={[styles.glow, glowStyle]} />
       <AnimatedPressable
         style={styles.card}
         onPress={() => onPress(muscle.id)}

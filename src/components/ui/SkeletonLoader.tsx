@@ -1,5 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { colors, spacing } from '../../theme';
 
 interface SkeletonLoaderProps {
@@ -9,30 +16,29 @@ interface SkeletonLoaderProps {
 }
 
 function SkeletonBlock({ width, height, style }: { width: number | string; height: number; style?: ViewStyle }) {
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const shimmer = useSharedValue(0.3);
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 1000, useNativeDriver: true }),
-      ])
+    shimmer.value = withRepeat(
+      withSequence(
+        withTiming(0.6, { duration: 1000 }),
+        withTiming(0.3, { duration: 1000 }),
+      ),
+      -1,
     );
-    animation.start();
-    return () => animation.stop();
-  }, []);
+  }, [shimmer]);
 
-  const opacity = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.6],
-  });
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: shimmer.value,
+  }));
 
   return (
     <Animated.View
       style={[
         styles.block,
-        { width: width as any, height, opacity },
+        { width: width as any, height },
         style,
+        animStyle,
       ]}
     />
   );
