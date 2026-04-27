@@ -1,9 +1,9 @@
 # HANDOFF — Aerial Anatomy App
 
-**Generated**: 2026-04-19
-**Last commit**: `65dc4ad docs: update CLAUDE.md, add TODO.md roadmap and 3D viewer plan`
-**Current state**: EAS preview build in progress (background, launched from previous session)
-**User**: Rubi Lueiza Fuentes — instructora de artes aéreas circenses, Chile (WhatsApp +56951567108)
+**Generated**: 2026-04-19 (last revised 2026-04-27)
+**Last commit on main at handoff write**: `65dc4ad docs: update CLAUDE.md, add TODO.md roadmap and 3D viewer plan` (already pushed to origin/main; later commits add HANDOFF.md and housekeeping).
+**Current state**: EAS preview build finished. APK: https://expo.dev/artifacts/eas/3UVEW4mBcqoBxAc978XLeY.apk (premium unlocked via `EXPO_PUBLIC_DEV_PREMIUM=true`)
+**User**: Rubi Lueiza Fuentes — instructora de artes aéreas circenses, Chile (WhatsApp +56951567108). Repo owner: Álvaro Salazar.
 
 ---
 
@@ -14,32 +14,32 @@ Este documento te permite continuar exactamente desde donde quedó la sesión an
 ### Acciones inmediatas al retomar
 
 ```bash
-# 1. Verificar estado del build EAS lanzado anteriormente
-cd "c:/Users/ADMIN/Desktop/Aerial-Anatomy-Project"
-eas build:list --limit 3 --json | head -100
-# Si hay un build "in-progress" o "finished" reciente con profile=preview, esa es la build activa
-# Si "finished", extraer la URL del APK: eas build:view <BUILD_ID> --json | grep artifacts
+# 1. Sincronizar con el remote ANTES de cualquier afirmación sobre estado git
+cd "c:/Users/alsal/OneDrive/Desktop/Aerial-Anatomy-Project"   # Windows / OneDrive
+# (en Linux/Mac de Rubi: cd al directorio donde quedó el clone)
+git fetch origin
+git status --short --branch
 
 # 2. Verificar que todo compila y tests pasan
 NODE_OPTIONS="--max-old-space-size=4096" npx tsc --noEmit
-npx jest --no-cache
+npm test       # esperado: 35/35 passing
 
-# 3. Verificar git status (debe estar limpio, todo commiteado)
-git log --oneline -12
-git status --short
+# 3. Verificar el build EAS pre-existente
+eas build:list --limit 3
+# El último build con profile=preview debe estar "finished".
+# APK: https://expo.dev/artifacts/eas/3UVEW4mBcqoBxAc978XLeY.apk
 ```
 
-### Si el build EAS terminó exitosamente
+### Si el APK ya está instalado (caso por defecto)
 
-1. Obtener URL del APK: `eas build:view <BUILD_ID> --json` → campo `artifacts.buildUrl`
-2. Enviar por WhatsApp a **+56951567108** (instrucciones abajo en "Regla de link sharing")
-3. Marcar `TODO.md` como completado si aplica
+1. No relanzar build sin permiso explícito.
+2. Esperar instrucciones del usuario sobre qué feature atacar (ver TODO.md).
 
-### Si el build EAS falló
+### Si el APK necesita reconstrucción
 
-1. Revisar logs: `eas build:view <BUILD_ID>`
-2. Si es error de config/dependencias, investigar y proponer fix al usuario
-3. No relanzar sin permiso explícito (ver reglas abajo)
+1. Confirmar con el usuario que se autoriza un nuevo `eas build`.
+2. Logs de un build previo: `eas build:view <BUILD_ID>`.
+3. Si falla por config/deps, proponer fix al usuario antes de relanzar.
 
 ---
 
@@ -72,7 +72,7 @@ git status --short
 
 ## 🔨 Trabajo completado en la sesión recién cerrada
 
-### 9 commits atómicos creados (orden cronológico)
+### 9 commits atómicos creados y pusheados a origin/main (orden cronológico)
 
 | # | Hash | Mensaje |
 |---|------|---------|
@@ -120,34 +120,29 @@ git status --short
 
 ---
 
-## 🚀 Build EAS en progreso
+## 🚀 Build EAS — completado
 
 ### Detalles del build
 - **Profile**: `preview` (APK standalone, internal-distribution)
 - **Plataforma**: Android
-- **Comando lanzado**: `eas build --platform android --profile preview --non-interactive`
 - **Premium activo**: Sí, vía `.env.local` con `EXPO_PUBLIC_DEV_PREMIUM=true`
-- **Duración esperada**: 10-15 minutos desde lanzamiento
-- **Propósito**: Que el usuario pruebe el APK con todas las features premium desbloqueadas
+- **APK**: https://expo.dev/artifacts/eas/3UVEW4mBcqoBxAc978XLeY.apk
+- **Estado**: ya enviado por WhatsApp al usuario (+56951567108) e instalado en su dispositivo.
 
-### Commit usado por el build
-El build está construyendo a partir de `65dc4ad` (último commit). Incluye:
-- Todos los cambios de las 9 commits de esta sesión
+### Commit del build
+Construido a partir de `65dc4ad`. Incluye:
+- Todos los cambios de las 9 commits de la sesión
 - Body map 2D con arte computacional (de sesiones anteriores)
 - 3D viewer con three.js (de sesiones anteriores)
 
-### Cómo verificar el build
+### Cómo verificar / re-listar
 
 ```bash
-# Listar builds recientes
-eas build:list --limit 3
-
-# Ver detalle de un build específico (reemplazar <ID>)
-eas build:view <ID>
-
-# Extraer solo la URL del APK
-eas build:view <ID> --json | node -e "let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>console.log(JSON.parse(d).artifacts?.buildUrl))"
+eas build:list --limit 3                  # ver builds recientes
+eas build:view <BUILD_ID>                 # detalle de un build
 ```
+
+Si el link del APK arriba devuelve 404, el artifact expiró (≥30 días). Pedir permiso explícito antes de lanzar uno nuevo con `eas build --platform android --profile preview`.
 
 ---
 
@@ -207,7 +202,7 @@ Lo abrí en WhatsApp para que lo compartas con tu pareja.
 
 ## 🧠 Memoria persistente del usuario
 
-Ubicación: `C:\Users\ADMIN\.claude\projects\c--Users-ADMIN-Desktop-Aerial-Anatomy-Project\memory\`
+Ubicación (máquina del repo owner Álvaro): `C:\Users\alsal\.claude\projects\c--Users-alsal-OneDrive-Desktop-Aerial-Anatomy-Project\memory\`. En la máquina de Rubi, será el path equivalente bajo su `~/.claude/`.
 
 - **`user_rubi.md`** — Perfil: hispanohablante, instructora de artes aéreas, flujo estructurado
 - **`feedback_link_sharing.md`** — Regla de WhatsApp a +56951567108 para builds
@@ -260,8 +255,8 @@ Ubicación: `C:\Users\ADMIN\.claude\projects\c--Users-ADMIN-Desktop-Aerial-Anato
 
 ```bash
 # 1. Clonar el repo (si no está)
-git clone <REPO_URL>
-cd Aerial-Anatomy-Project
+git clone https://github.com/Luc1Dre4m/Aerial-Anatomy.git
+cd Aerial-Anatomy   # nombre por defecto que produce el clone
 
 # 2. Instalar dependencias
 npm install
@@ -285,16 +280,15 @@ npm test
 
 ---
 
-## ⚠️ Archivos NO commiteados deliberadamente
+## ⚠️ Archivos cleaned up en la pasada de saneamiento (2026-04-27)
 
-Estos existen localmente pero no se commitearon (pedir al usuario si los quiere incluir):
+Para contexto del agente que retoma — estos archivos **ya no aparecen** en working tree de la máquina del repo owner. Si reaparecen, no commitearlos:
 
-- `ANTIGRAVITY_GUIDE.md`
-- `Aerial_Anatomy_App_Instrucciones.docx`
-- `PROMPT_INICIAL.md`
-- `TUTORIAL_COMPLETO.md`
-- `com.facebook.react.fabric.mounting.*` — basura generada por Metro, NO commitear
-- `.claude/scheduled_tasks.lock` — estado local del plugin
+- Docs sueltos en raíz (`ANTIGRAVITY_GUIDE.md`, `PROMPT_INICIAL.md`, `TUTORIAL_COMPLETO.md`, `Aerial_Anatomy_App_Instrucciones.docx`) → movidos a la carpeta `Aerial-Anatomy-Handoff/` (fuera del repo).
+- `com.facebook.react.fabric.*` (crash dumps Android) y `.claude/scheduled_tasks.lock` → cubiertos por `.gitignore`.
+- `Aerial-Anatomy/` subdir (clone anidado del propio repo, históricamente reaparecía) → cubierto por `.gitignore` con entrada `/Aerial-Anatomy/`.
+- `src/services/biodigital.ts`, `src/data/biodigitalMapping.ts` → ya borrados en commit `1c7fbc6`. Si reaparecen, son ruido (probablemente de un editor que rehidrata archivos viejos), borrar sin commitear.
+- `src/data/__tests__/__mocks__/react-native.js` → eliminado. Era un mock no usado dentro de `__tests__/`, lo cual hacía que jest lo intentara correr como test suite y fallara. `jest-expo` ya provee el mock por defecto.
 
 ---
 
@@ -302,8 +296,7 @@ Estos existen localmente pero no se commitearon (pedir al usuario si los quiere 
 
 Si el agente necesita detalle exacto de alguna decisión previa, los logs completos están en la máquina original:
 
-- `C:\Users\ADMIN\.claude\projects\c--Users-ADMIN-Desktop-Aerial-Anatomy-Project\f840a2e6-e47c-4414-9b50-8f32a8012d3a.jsonl` (~50MB, historial completo)
-- `C:\Users\ADMIN\.claude\projects\c--Users-ADMIN-Desktop-Aerial-Anatomy-Project\25bb630f-2222-41fc-b023-697e327fcf12.jsonl` (sesión reciente corta)
+- `C:\Users\alsal\.claude\projects\c--Users-alsal-OneDrive-Desktop-Aerial-Anatomy-Project\` — directorio con jsonl de la máquina del repo owner.
 
 **No es necesario leerlos para retomar.** Este HANDOFF.md cubre todo el contexto accionable. Los jsonl solo son útiles si hay una decisión ambigua que necesitas reconstruir.
 
@@ -311,11 +304,10 @@ Si el agente necesita detalle exacto de alguna decisión previa, los logs comple
 
 ## ✅ Checklist para el agente que retoma
 
-- [ ] Leí `CLAUDE.md` completo
-- [ ] Leí `TODO.md` completo
-- [ ] Verifiqué `git log --oneline -12` — último commit debe ser `65dc4ad`
-- [ ] Verifiqué que `npx tsc --noEmit` pasa limpio
-- [ ] Verifiqué que `npm test` pasa 35/35
-- [ ] Verifiqué estado del build EAS con `eas build:list --limit 3`
-- [ ] Si el build terminó, envié el link por WhatsApp al usuario
-- [ ] Actualicé `TODO.md` si hay cambios de estado
+- [ ] Corrí `git fetch origin` ANTES de hablar de estado git (lección aprendida 2026-04-27).
+- [ ] Leí `CLAUDE.md`, `TODO.md` y este `HANDOFF.md` completos.
+- [ ] Verifiqué `git status --short --branch` → working tree limpio, alineado con `origin/main`.
+- [ ] Verifiqué que `NODE_OPTIONS=... npx tsc --noEmit` pasa limpio.
+- [ ] Verifiqué que `npm test` pasa 35/35.
+- [ ] Verifiqué estado del APK pre-existente con `eas build:list --limit 3`.
+- [ ] Esperé instrucciones del usuario antes de iniciar ninguna feature nueva.
