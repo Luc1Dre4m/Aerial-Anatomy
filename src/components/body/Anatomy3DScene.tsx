@@ -23,6 +23,11 @@ const INITIAL_CAM_Z = 7;
 const MIN_CAM_Z = 4;
 const MAX_CAM_Z = 12;
 const X_TILT_CLAMP = 0.35;
+// Body 2D viewBox is 300x460 with image (PNG ratio ~0.714) centered via 'contain'.
+// Plane keeps PNG aspect (3 x 4.2) → picking compensates the 20-unit top/bottom margin
+// so a 3D tap maps to the same MUSCLE_ZONES coordinate space as the 2D viewer.
+const PLANE_VBOX_H = 420;
+const VBOX_Y_MARGIN = 20;
 
 export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
   const rotY = useRef(0);
@@ -104,7 +109,7 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
     const u = visible.uv.x;
     const v = visible.uv.y;
     const vx = (isFront ? u : 1 - u) * 300;
-    const vy = (1 - v) * 420;
+    const vy = VBOX_Y_MARGIN + (1 - v) * PLANE_VBOX_H;
     const view: BodyView = isFront ? 'front' : 'back';
     const muscleId = findMuscleAtPoint(view, vx, vy);
     if (muscleId) onMuscleSelect(muscleId);
