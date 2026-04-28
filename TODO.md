@@ -53,8 +53,7 @@ Requiere acceso a cuentas de stores y configuracion externa.
 
 ## Backlog — Mejoras Tecnicas y Futuras
 
-- [x] **Unificar animation drivers (componentes)** — 9 componentes migrados: MuscleOfTheDay, AnimatedTitle, AnimatedPressable, AnimatedListItem, SkeletonLoader, FormScoreCard, FlashCard (+ haptics), ActivationSequence, BreathingIndicator, MovementExecution. FlashCard agrega haptic feedback al flip.
-- [ ] **Unificar animation drivers (screens)** — Quedan 4 archivos: CuerpoScreen (flip 3D), EstudioScreen (progress bar + card entrance), BottomTabNavigator (tab scale), AnimatedSplashScreen (splash sequence). Baja prioridad porque usan `useNativeDriver: true` que ya corre en UI thread.
+- [ ] **Unificar animation drivers restantes** — Quedan 9 archivos con `Animated` de RN core: AnimatedTitle, AnimatedPressable, AnimatedListItem, SkeletonLoader, ActivationSequence, FlashCard, MovementExecution, BreathingIndicator, FormScoreCard. MuscleOfTheDay ya migrado.
 - [x] **Code splitting** — Anatomy3DViewer con `React.lazy` + `Suspense` en CuerpoScreen. El bundle de three.js/expo-gl solo se carga al cambiar a tab 3D.
 - [ ] **Custom icon set** — Reemplazar emojis con iconos SVG custom que matcheen el tema dorado. `assets/icons/`, componente `Icon.tsx`.
 - [ ] **Contenido comunitario** — Sistema de submissions de movimientos por instructores. Backend en Supabase con review flow.
@@ -78,6 +77,3 @@ Requiere acceso a cuentas de stores y configuracion externa.
 - [x] **MuscleOfTheDay migrado a Reanimated** — Glow pulse ahora usa `withRepeat`/`withSequence` en UI thread.
 - [x] **Haptics en quiz** — `hapticSuccess` en respuesta correcta, `hapticLight` en incorrecta (EstudioScreen).
 - [x] **Code splitting 3D** — `React.lazy` + `Suspense` para Anatomy3DViewer. ActivityIndicator como fallback.
-- [x] **StreakBadge** — Componente con icono de fuego + numero, visible en CuerpoScreen (compact) y EstudioScreen (full). `recordStudySession()` se llama al completar quiz.
-- [x] **computeProgress extraido a pure function** — `src/utils/progress.ts` sin dependencias del store, 7 tests adicionales. Hook ahora es un thin wrapper. Total: 35 tests.
-- [x] **Bug fix: progress ignora IDs invalidos** — Si el store tiene IDs de musculos eliminados del dataset, no se cuentan. Usa `Set` para dedup.
