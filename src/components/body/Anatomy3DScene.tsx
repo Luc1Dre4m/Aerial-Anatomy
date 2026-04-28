@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, PixelRatio } from 'react-native';
 import { GLView, ExpoWebGLRenderingContext } from 'expo-gl';
 import { Renderer, TextureLoader } from 'expo-three';
 import * as THREE from 'three';
 import { Asset } from 'expo-asset';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { findMuscleAtPoint } from '../../data/muscleZones';
 import { BodyView } from './bodyConstants';
 import { colors } from '../../theme';
@@ -30,12 +30,12 @@ const PLANE_VBOX_H = 420;
 const VBOX_Y_MARGIN = 20;
 
 export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
-  const rotY = useRef(0);
-  const rotX = useRef(0);
-  const camZ = useRef(INITIAL_CAM_Z);
-  const savedRotY = useRef(0);
-  const savedRotX = useRef(0);
-  const savedCamZ = useRef(INITIAL_CAM_Z);
+  const rotY = useSharedValue(0);
+  const rotX = useSharedValue(0);
+  const camZ = useSharedValue(INITIAL_CAM_Z);
+  const savedRotY = useSharedValue(0);
+  const savedRotX = useSharedValue(0);
+  const savedCamZ = useSharedValue(INITIAL_CAM_Z);
 
   const groupRef = useRef<THREE.Group | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -45,36 +45,6 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
   const backPlaneRef = useRef<THREE.Mesh | null>(null);
   const viewSize = useRef({ width: 0, height: 0 });
   const rafRef = useRef<number | null>(null);
-
-  const updateRot = useCallback((dtx: number, dty: number) => {
-    rotY.current = savedRotY.current + dtx;
-    rotX.current = Math.max(
-      -X_TILT_CLAMP,
-      Math.min(X_TILT_CLAMP, savedRotX.current + dty),
-    );
-  }, []);
-
-  const endRot = useCallback(() => {
-    savedRotY.current = rotY.current;
-    savedRotX.current = rotX.current;
-  }, []);
-
-  const updateZoom = useCallback((scale: number) => {
-    camZ.current = Math.max(MIN_CAM_Z, Math.min(MAX_CAM_Z, savedCamZ.current / scale));
-  }, []);
-
-  const endZoom = useCallback(() => {
-    savedCamZ.current = camZ.current;
-  }, []);
-
-  const resetView = useCallback(() => {
-    rotY.current = 0;
-    rotX.current = 0;
-    camZ.current = INITIAL_CAM_Z;
-    savedRotY.current = 0;
-    savedRotX.current = 0;
-    savedCamZ.current = INITIAL_CAM_Z;
-  }, []);
 
   const handleTap = useCallback((x: number, y: number) => {
     const cam = cameraRef.current;
@@ -119,21 +89,25 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
     .maxPointers(1)
     .onUpdate((e) => {
       'worklet';
-      runOnJS(updateRot)(e.translationX * 0.008, e.translationY * 0.008);
+      rotY.value = savedRotY.value + e.translationX * 0.008;
+      const next = savedRotX.value + e.translationY * 0.008;
+      rotX.value = next < -X_TILT_CLAMP ? -X_TILT_CLAMP : next > X_TILT_CLAMP ? X_TILT_CLAMP : next;
     })
     .onEnd(() => {
       'worklet';
-      runOnJS(endRot)();
+      savedRotY.value = rotY.value;
+      savedRotX.value = rotX.value;
     });
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
       'worklet';
-      runOnJS(updateZoom)(e.scale);
+      const next = savedCamZ.value / e.scale;
+      camZ.value = next < MIN_CAM_Z ? MIN_CAM_Z : next > MAX_CAM_Z ? MAX_CAM_Z : next;
     })
     .onEnd(() => {
       'worklet';
-      runOnJS(endZoom)();
+      savedCamZ.value = camZ.value;
     });
 
   const doubleTap = Gesture.Tap()
@@ -141,12 +115,18 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
     .maxDelay(250)
     .onEnd(() => {
       'worklet';
-      runOnJS(resetView)();
+      rotY.value = 0;
+      rotX.value = 0;
+      camZ.value = INITIAL_CAM_Z;
+      savedRotY.value = 0;
+      savedRotX.value = 0;
+      savedCamZ.value = INITIAL_CAM_Z;
     });
 
   const singleTap = Gesture.Tap()
     .numberOfTaps(1)
     .maxDuration(300)
+    .maxDistance(8)
     .onEnd((e) => {
       'worklet';
       runOnJS(handleTap)(e.x, e.y);
@@ -171,13 +151,8 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 0, INITIAL_CAM_Z);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
-    const dir = new THREE.DirectionalLight(0xfdf0c2, 0.45);
-    dir.position.set(3, 5, 6);
-    scene.add(dir);
-    const rim = new THREE.DirectionalLight(0x8b6bd9, 0.25);
-    rim.position.set(-4, 2, -3);
-    scene.add(rim);
+    // MeshBasicMaterial ignores lights — the PNG textures already carry painted shading.
+    // Adding ambient/directional lights had no visual effect and wasted setup cost.
 
     const loader = new TextureLoader();
     const loadTexture = async (mod: number): Promise<THREE.Texture> => {
@@ -202,13 +177,13 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
     const frontMat = new THREE.MeshBasicMaterial({
       map: frontTex,
       transparent: true,
-      alphaTest: 0.05,
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
     const backMat = new THREE.MeshBasicMaterial({
       map: backTex,
       transparent: true,
-      alphaTest: 0.05,
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
 
@@ -226,7 +201,8 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
     const renderer = new Renderer({ gl });
     renderer.setSize(width, height);
     renderer.setClearColor(new THREE.Color(colors.bg.primary), 1);
-    renderer.setPixelRatio(1);
+    // Cap at 2x to avoid excessive fill cost on 3x density screens (Pixel 7+ etc).
+    renderer.setPixelRatio(Math.min(PixelRatio.get(), 2));
 
     sceneRef.current = scene;
     cameraRef.current = camera;
@@ -241,9 +217,11 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
       const r = rendererRef.current;
       const s = sceneRef.current;
       if (!g || !c || !r || !s) return;
-      g.rotation.y = rotY.current;
-      g.rotation.x = rotX.current;
-      c.position.z = camZ.current;
+      // Reading shared values from JS thread is safe and bridge-free; the worklet writes
+      // happen on UI thread without crossing into JS for every gesture event.
+      g.rotation.y = rotY.value;
+      g.rotation.x = rotX.value;
+      c.position.z = camZ.value;
       r.render(s, c);
       gl.endFrameEXP();
       rafRef.current = requestAnimationFrame(tick);
