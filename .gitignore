@@ -40,11 +40,5 @@ yarn-error.*
 /ios
 /android
 
-# Android RN Fabric crash dumps
-com.facebook.react.*
-
-# Claude Code plugin state
-.claude/scheduled_tasks.lock
-
-# Defensive: prevent accidental nested clones at repo root
-/Aerial-Anatomy/
+# Claude Code ephemeral state
+.claude/
