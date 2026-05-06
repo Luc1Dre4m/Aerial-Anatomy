@@ -1,0 +1,7 @@
+# Track NO model files until LFS/CDN strategy decided (see plan §open-questions).
+*.glb
+*.gltf
+*.bin
+*.fbx
+*.obj
+*.stl

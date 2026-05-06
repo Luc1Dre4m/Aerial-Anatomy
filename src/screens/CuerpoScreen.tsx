@@ -10,6 +10,12 @@ import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { BodyMap } from '../components/body/BodyMap';
 import { ZoomableBody } from '../components/body/ZoomableBody';
 import { MuscleTooltip } from '../components/body/MuscleTooltip';
+import { Anatomy3DViewer } from '../components/body/Anatomy3DViewer';
+import { Anatomy3DPoCScene } from '../components/body/Anatomy3DPoCScene';
+
+// Feature flag to switch the 3D tab between the legacy planar viewer and the
+// new mesh-based PoC built on @react-three/fiber/native. Defaults to legacy.
+const USE_3D_POC = process.env.EXPO_PUBLIC_3D_POC === 'true';
 import { ViewModeToggle } from '../components/body/ViewModeToggle';
 
 const Anatomy3DViewer = React.lazy(() =>
@@ -135,7 +141,9 @@ export function CuerpoScreen() {
       <View style={styles.bodyContainer}>
         {viewMode === '3d' ? (
           <ErrorBoundary>
-            <Suspense fallback={<ActivityIndicator size="large" color={colors.accent.primary} style={StyleSheet.absoluteFill} />}>
+            {USE_3D_POC ? (
+              <Anatomy3DPoCScene />
+            ) : (
               <Anatomy3DViewer
                 highlightedMuscles={tooltipMuscleId ? [tooltipMuscleId] : []}
                 onMuscleSelect={(muscleId) => {
@@ -143,7 +151,7 @@ export function CuerpoScreen() {
                   setTooltipMuscleId(muscleId);
                 }}
               />
-            </Suspense>
+            )}
           </ErrorBoundary>
         ) : (
           <>
