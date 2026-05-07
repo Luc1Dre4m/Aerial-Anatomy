@@ -42,3 +42,6 @@ yarn-error.*
 
 # Claude Code ephemeral state
 .claude/
+
+# Local STL cache for tools/batch-build-models.mjs (raw BodyParts3D downloads)
+tools/.cache/

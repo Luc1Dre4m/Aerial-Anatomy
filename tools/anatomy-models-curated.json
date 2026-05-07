@@ -1,0 +1,79 @@
+{
+  "$comment": "Curated FMA → muscleId mapping for the 10 priority muscles in aerial arts. Each entry lists all anatomical sub-parts that compose the muscle as users perceive it. Source: BodyParts3D (Kevin-Mattheus-Moerman mirror), CC BY-SA 2.1 Japan. The remaining 26 muscles will be curated incrementally with Álvaro's anatomical validation.",
+  "models": {
+    "m_pectoral_mayor": {
+      "color": "0xC2412B",
+      "label_es": "Pectoral mayor",
+      "fma": [
+        "FMA34690", "FMA34691",
+        "FMA79979", "FMA79980",
+        "FMA45874", "FMA45875"
+      ]
+    },
+    "m_dorsal_ancho": {
+      "color": "0xC2412B",
+      "label_es": "Dorsal ancho (latissimus dorsi)",
+      "fma": ["FMA13358", "FMA13359"]
+    },
+    "m_deltoides": {
+      "color": "0xC2412B",
+      "label_es": "Deltoides (3 porciones × 2)",
+      "fma": [
+        "FMA34680", "FMA34681",
+        "FMA34682", "FMA34683",
+        "FMA34684", "FMA34685"
+      ]
+    },
+    "m_trapecio": {
+      "color": "0xC2412B",
+      "label_es": "Trapecio (descending + transverse + ascending × 2)",
+      "fma": [
+        "FMA33586", "FMA33587",
+        "FMA33584", "FMA33585",
+        "FMA33581", "FMA33583"
+      ]
+    },
+    "m_biceps": {
+      "color": "0xC2412B",
+      "label_es": "Bíceps braquial (long + short head × 2)",
+      "fma": [
+        "FMA37684", "FMA37685",
+        "FMA37686", "FMA37687"
+      ]
+    },
+    "m_triceps": {
+      "color": "0xC2412B",
+      "label_es": "Tríceps braquial (long + lateral + medial head × 2)",
+      "fma": [
+        "FMA37695", "FMA37696",
+        "FMA37697", "FMA37698",
+        "FMA37699", "FMA37700"
+      ]
+    },
+    "m_recto_abdominal": {
+      "color": "0xC2412B",
+      "label_es": "Recto abdominal",
+      "fma": ["FMA13377", "FMA13378"]
+    },
+    "m_oblicuo_externo": {
+      "color": "0xC2412B",
+      "label_es": "Oblicuo externo",
+      "fma": ["FMA13336", "FMA13337"]
+    },
+    "m_gluteo_mayor": {
+      "color": "0xC2412B",
+      "label_es": "Glúteo mayor",
+      "fma": ["FMA22328", "FMA22329"]
+    },
+    "m_cuadriceps": {
+      "color": "0xC2412B",
+      "label_es": "Cuádriceps (rectus femoris + 3 vastii × 2)",
+      "fma": [
+        "FMA38928", "FMA38929",
+        "FMA38930", "FMA38931",
+        "FMA38932", "FMA38933",
+        "FMA38934", "FMA38935"
+      ]
+    }
+  }
+}

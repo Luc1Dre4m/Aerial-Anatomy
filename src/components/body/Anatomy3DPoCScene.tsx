@@ -5,10 +5,10 @@ import { useGLTF, OrbitControls, Bounds } from '@react-three/drei/native';
 import type { GLTF } from 'three-stdlib';
 import { colors } from '../../theme';
 
-// Composite pectoralis major: all 6 lateralized parts (clavicular/sternocostal/
-// abdominal × right/left) merged into a single GLB by tools/stl-to-glb.mjs.
-// FMA codes: 34690, 34691, 79979, 79980, 45874, 45875 from BodyParts3D
-// (CC BY-SA 2.1 Japan). Geometry centered at origin in the conversion script.
+// Composite pectoralis major (FMA34690+34691+79979+79980+45874+45875).
+// Light enough for iterative dev (7.6 MB, 316k verts). Heavier muscles like
+// latissimus dorsi (32.8 MB) and external oblique (78.9 MB) also load OK on
+// device — poly optimization (Draco / decimation) deferred to pre-production.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const POC_MODEL = require('../../../assets/3d-models/m_pectoral_mayor.glb');
 
@@ -50,7 +50,7 @@ export function Anatomy3DPoCScene() {
   const [loaded, setLoaded] = React.useState(false);
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>3D PoC — Pectoral mayor (entero) · BodyParts3D CC BY-SA 2.1 JP</Text>
+      <Text style={styles.label}>3D PoC — Pectoral mayor · BodyParts3D CC BY-SA 2.1 JP</Text>
       <GLBErrorBoundary>
         <Canvas
           camera={{ position: [0, 0, 4], fov: 45 }}
