@@ -19,8 +19,11 @@ const M_BICEPS = require('../../assets/3d-models/m_biceps.glb');
 const M_TRICEPS = require('../../assets/3d-models/m_triceps.glb');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const M_RECTO_ABDOMINAL = require('../../assets/3d-models/m_recto_abdominal.glb');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const M_OBLICUO_EXTERNO = require('../../assets/3d-models/m_oblicuo_externo.glb');
+// m_oblicuo_externo (78.9 MB) is temporarily excluded from the registry: loading
+// it together with the other muscles in the body view triggered an Android OOM
+// (~200 MB allocation needed to parse). Will be re-enabled after we run a
+// decimation pass on the raw mesh.
+// const M_OBLICUO_EXTERNO = require('../../assets/3d-models/m_oblicuo_externo.glb');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const M_GLUTEO_MAYOR = require('../../assets/3d-models/m_gluteo_mayor.glb');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -34,7 +37,7 @@ export const ANATOMY_3D_MODELS: Record<string, number> = {
   m_biceps: M_BICEPS,
   m_triceps: M_TRICEPS,
   m_recto_abdominal: M_RECTO_ABDOMINAL,
-  m_oblicuo_externo: M_OBLICUO_EXTERNO,
+  // m_oblicuo_externo: see comment above — temporarily excluded.
   m_gluteo_mayor: M_GLUTEO_MAYOR,
   m_cuadriceps: M_CUADRICEPS,
 };

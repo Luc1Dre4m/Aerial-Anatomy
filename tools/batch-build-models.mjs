@@ -115,19 +115,23 @@ async function buildMuscle(muscleId, def) {
   }
 
   const scene = new THREE.Scene();
+  // userData.muscleId on the parent group lets the runtime picker map back
+  // to a known muscle even when the GLB merges multiple sub-parts.
+  scene.userData.muscleId = muscleId;
   let totalVerts = 0;
   for (const stlPath of stlPaths) {
     const mesh = loadSTLAsMesh(stlPath, material);
+    mesh.userData.muscleId = muscleId;
     scene.add(mesh);
     totalVerts += mesh.geometry.attributes.position.count;
   }
 
-  // Bake centering into geometries so GLB lands at origin.
-  const box = new THREE.Box3().setFromObject(scene);
-  const center = box.getCenter(new THREE.Vector3());
-  scene.traverse((obj) => {
-    if (obj instanceof THREE.Mesh) obj.geometry.translate(-center.x, -center.y, -center.z);
-  });
+  // NOTE: we deliberately do NOT center the geometries here. BodyParts3D ships
+  // them in absolute anatomical coordinates (~mm relative to a body origin),
+  // so loading every muscle's GLB into the same scene at runtime puts each one
+  // in its real anatomical position automatically. The runtime viewer applies
+  // a single <Bounds> wrapper to frame the combined body, then the user can
+  // tap any muscle for picking.
 
   const buf = await exportGLB(scene);
   fs.writeFileSync(outputPath, buf);

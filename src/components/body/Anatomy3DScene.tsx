@@ -1,8 +1,9 @@
-import React, { Suspense, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
-import { Canvas } from '@react-three/fiber/native';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Canvas, ThreeEvent } from '@react-three/fiber/native';
 import { useGLTF, OrbitControls, Bounds } from '@react-three/drei/native';
 import type { GLTF } from 'three-stdlib';
+import * as THREE from 'three';
 import {
   ANATOMY_3D_MODELS,
   ANATOMY_3D_AVAILABLE_IDS,
@@ -15,18 +16,81 @@ interface Anatomy3DSceneProps {
   onMuscleSelect?: (muscleId: string) => void;
 }
 
-function MuscleModel({ asset }: { asset: number }) {
-  // useGLTF's types expect a string Path, but @react-three/drei/native accepts
-  // RN asset module IDs (numbers from require()) at runtime. Cast through
-  // unknown to satisfy TypeScript while preserving the documented native API.
+const HIGHLIGHT_COLOR = new THREE.Color(0xd4a843); // theme accent gold
+const BASE_COLOR = new THREE.Color(0xc2412b); // anatomical muscle red
+const SELECTED_EMISSIVE_INTENSITY = 0.6;
+
+/**
+ * One muscle group rendered into the shared scene at its native anatomical
+ * coordinates (preserved from BodyParts3D). Each mesh is tagged with its
+ * muscleId so the picker can map a tap to a known muscle. Materials are
+ * cloned per-instance so highlighting one muscle doesn't affect others.
+ */
+function MuscleGroup({
+  muscleId,
+  asset,
+  selected,
+  onSelect,
+}: {
+  muscleId: string;
+  asset: number;
+  selected: boolean;
+  onSelect: (id: string) => void;
+}) {
+  // useGLTF accepts RN asset module IDs at runtime even though its types want a string.
   const gltf = useGLTF(asset as unknown as string) as unknown as GLTF;
-  return <primitive object={gltf.scene} />;
+  const groupRef = useRef<THREE.Group | null>(null);
+
+  // Tag every mesh with the muscleId on first mount and replace shared
+  // materials with per-instance clones we can tint without bleeding into
+  // other muscles' meshes.
+  useEffect(() => {
+    gltf.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        mesh.userData.muscleId = muscleId;
+        const original = mesh.material as THREE.MeshStandardMaterial;
+        const clone = original.clone();
+        clone.color.copy(BASE_COLOR);
+        clone.emissive = new THREE.Color(0x000000);
+        clone.emissiveIntensity = 0;
+        mesh.material = clone;
+      }
+    });
+  }, [gltf, muscleId]);
+
+  // Update emissive on selection change without re-traversing materials.
+  useEffect(() => {
+    gltf.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mat = (obj as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (selected) {
+          mat.emissive.copy(HIGHLIGHT_COLOR);
+          mat.emissiveIntensity = SELECTED_EMISSIVE_INTENSITY;
+        } else {
+          mat.emissive.setHex(0x000000);
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [selected, gltf]);
+
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
+    onSelect(muscleId);
+  };
+
+  return (
+    <group ref={groupRef} onClick={handleClick}>
+      <primitive object={gltf.scene} />
+    </group>
+  );
 }
 
 function LoadingIndicator() {
   return (
     <View style={styles.loadingOverlay} pointerEvents="none">
-      <Text style={styles.loadingText}>Cargando modelo 3D…</Text>
+      <Text style={styles.loadingText}>Cargando modelos 3D…</Text>
     </View>
   );
 }
@@ -52,80 +116,41 @@ class GLBErrorBoundary extends React.Component<
   }
 }
 
-function pickInitialId(highlighted: string[] | undefined): string {
-  if (highlighted) {
-    const matched = highlighted.find((id) => ANATOMY_3D_AVAILABLE_IDS.includes(id));
-    if (matched) return matched;
-  }
-  return ANATOMY_3D_AVAILABLE_IDS[0];
-}
-
-export function Anatomy3DScene({
-  highlightedMuscles,
-  onMuscleSelect,
-}: Anatomy3DSceneProps) {
-  const [activeId, setActiveId] = useState<string>(() =>
-    pickInitialId(highlightedMuscles)
-  );
-
-  // If the parent updates highlightedMuscles to a 3D-available id, follow it.
-  useEffect(() => {
-    const target = highlightedMuscles?.find((id) =>
-      ANATOMY_3D_AVAILABLE_IDS.includes(id)
-    );
-    if (target && target !== activeId) setActiveId(target);
-    // activeId intentionally excluded — we only sync on highlightedMuscles change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightedMuscles]);
-
-  const activeMuscle = muscles.find((m) => m.id === activeId);
-  const asset = ANATOMY_3D_MODELS[activeId];
+export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const handleSelect = (id: string) => {
-    setActiveId(id);
+    setSelectedId(id);
     onMuscleSelect?.(id);
   };
 
+  const selectedMuscle = selectedId
+    ? muscles.find((m) => m.id === selectedId)
+    : null;
+
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipsRow}
-      >
-        {ANATOMY_3D_AVAILABLE_IDS.map((id) => {
-          const m = muscles.find((mm) => mm.id === id);
-          if (!m) return null;
-          const active = id === activeId;
-          return (
-            <Pressable
-              key={id}
-              onPress={() => handleSelect(id)}
-              style={[styles.chip, active && styles.chipActive]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {m.name_es}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
       <View style={styles.canvasWrapper}>
         <GLBErrorBoundary>
-          <Canvas camera={{ position: [0, 0, 4], fov: 45 }} style={styles.canvas}>
+          <Canvas camera={{ position: [0, 0, 250], fov: 35 }} style={styles.canvas}>
             <ambientLight intensity={0.55} />
-            <directionalLight position={[5, 5, 5]} intensity={1.2} />
+            <directionalLight position={[100, 100, 100]} intensity={1.2} />
             <directionalLight
-              position={[-3, 2, -4]}
+              position={[-80, 40, -100]}
               intensity={0.4}
               color="#a8c8ff"
             />
             <Suspense fallback={null}>
-              <Bounds fit clip observe margin={1.4} key={activeId}>
-                <MuscleModel asset={asset} />
+              <Bounds fit clip observe margin={1.4}>
+                {ANATOMY_3D_AVAILABLE_IDS.map((id) => (
+                  <MuscleGroup
+                    key={id}
+                    muscleId={id}
+                    asset={ANATOMY_3D_MODELS[id]}
+                    selected={selectedId === id}
+                    onSelect={handleSelect}
+                  />
+                ))}
               </Bounds>
             </Suspense>
             <OrbitControls enablePan={false} />
@@ -134,12 +159,16 @@ export function Anatomy3DScene({
         </GLBErrorBoundary>
       </View>
 
-      {activeMuscle && (
-        <View style={styles.footer}>
-          <Text style={styles.footerName}>{activeMuscle.name_es}</Text>
-          <Text style={styles.footerLatin}>{activeMuscle.name_latin}</Text>
-        </View>
-      )}
+      <View style={styles.footer}>
+        {selectedMuscle ? (
+          <>
+            <Text style={styles.footerName}>{selectedMuscle.name_es}</Text>
+            <Text style={styles.footerLatin}>{selectedMuscle.name_latin}</Text>
+          </>
+        ) : (
+          <Text style={styles.footerHint}>Toca un músculo para seleccionarlo</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -148,31 +177,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg.primary,
-  },
-  chipsRow: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    backgroundColor: colors.bg.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
-  },
-  chipText: {
-    ...typography.body.small,
-    color: colors.text.muted,
-  },
-  chipTextActive: {
-    color: colors.bg.primary,
-    fontWeight: '600',
   },
   canvasWrapper: {
     flex: 1,
@@ -200,6 +204,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    minHeight: 56,
   },
   footerName: {
     ...typography.heading.h3,
@@ -210,5 +215,10 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     fontStyle: 'italic',
     color: colors.text.muted,
+  },
+  footerHint: {
+    ...typography.body.small,
+    color: colors.text.muted,
+    fontStyle: 'italic',
   },
 });
