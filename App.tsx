@@ -105,7 +105,10 @@ export default function App() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded || !authChecked) return null;
+  // DIAGNOSTIC: temporarily skip fontsLoaded gate to test if useFonts is the
+  // reason the entire app is rendering blank. If removing this gate makes the
+  // app appear, useFonts is hung — root cause is the font asset bundling.
+  if (!authChecked) return null;
 
   if (showAnimatedSplash) {
     return (

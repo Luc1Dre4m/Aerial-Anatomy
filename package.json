@@ -45,7 +45,7 @@
     "react-native-svg": "15.12.1",
     "react-native-vision-camera": "^4.7.3",
     "react-native-webview": "13.15.0",
-    "three": "^0.166.1",
+    "three": "^0.170.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -59,15 +59,7 @@
     "typescript": "~5.9.2"
   },
   "overrides": {
-    "expo-three": {
-      "expo-file-system": "~19.0.21"
-    },
-    "@expo/browser-polyfill": {
-      "expo-file-system": "~19.0.21"
-    },
-    "expo-asset-utils": {
-      "expo-file-system": "~19.0.21"
-    }
+    "three": "^0.170.0"
   },
   "private": true
 }

@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { Canvas } from '@react-three/fiber/native';
 import { useGLTF, OrbitControls } from '@react-three/drei/native';
 import type { GLTF } from 'three-stdlib';
@@ -11,7 +11,7 @@ import { colors } from '../../theme';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const POC_MODEL = require('../../../assets/3d-models/poc-helmet.glb');
 
-function Model() {
+function HelmetModel() {
   const gltf = useGLTF(POC_MODEL) as unknown as GLTF;
   return <primitive object={gltf.scene} />;
 }
@@ -19,6 +19,7 @@ function Model() {
 export function Anatomy3DPoCScene() {
   return (
     <View style={styles.container}>
+      <Text style={styles.label}>3D PoC — GLB load (DamagedHelmet)</Text>
       <Canvas
         camera={{ position: [0, 0, 3], fov: 45 }}
         style={styles.canvas}
@@ -26,7 +27,7 @@ export function Anatomy3DPoCScene() {
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={1.2} />
         <Suspense fallback={null}>
-          <Model />
+          <HelmetModel />
         </Suspense>
         <OrbitControls enablePan={false} />
       </Canvas>
@@ -41,5 +42,13 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
+  },
+  label: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    color: colors.accent.light,
+    fontSize: 12,
+    zIndex: 10,
   },
 });
