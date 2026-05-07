@@ -1,273 +1,214 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet, PixelRatio } from 'react-native';
-import { GLView, ExpoWebGLRenderingContext } from 'expo-gl';
-import { Renderer, TextureLoader } from 'expo-three';
-import * as THREE from 'three';
-import { Asset } from 'expo-asset';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS, useSharedValue } from 'react-native-reanimated';
-import { findMuscleAtPoint } from '../../data/muscleZones';
-import { BodyView } from './bodyConstants';
-import { colors } from '../../theme';
+import React, { Suspense, useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { Canvas } from '@react-three/fiber/native';
+import { useGLTF, OrbitControls, Bounds } from '@react-three/drei/native';
+import type { GLTF } from 'three-stdlib';
+import {
+  ANATOMY_3D_MODELS,
+  ANATOMY_3D_AVAILABLE_IDS,
+} from '../../data/anatomy3DAssets';
+import { muscles } from '../../data/muscles';
+import { colors, spacing, typography } from '../../theme';
 
 interface Anatomy3DSceneProps {
+  highlightedMuscles?: string[];
   onMuscleSelect?: (muscleId: string) => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const FRONT_ASSET = require('../../../assets/anatomy/muscle_front.png');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const BACK_ASSET = require('../../../assets/anatomy/muscle_back.png');
+function MuscleModel({ asset }: { asset: number }) {
+  // useGLTF's types expect a string Path, but @react-three/drei/native accepts
+  // RN asset module IDs (numbers from require()) at runtime. Cast through
+  // unknown to satisfy TypeScript while preserving the documented native API.
+  const gltf = useGLTF(asset as unknown as string) as unknown as GLTF;
+  return <primitive object={gltf.scene} />;
+}
 
-const INITIAL_CAM_Z = 7;
-const MIN_CAM_Z = 4;
-const MAX_CAM_Z = 12;
-const X_TILT_CLAMP = 0.35;
-// Body 2D viewBox is 300x460 with image (PNG ratio ~0.714) centered via 'contain'.
-// Plane keeps PNG aspect (3 x 4.2) → picking compensates the 20-unit top/bottom margin
-// so a 3D tap maps to the same MUSCLE_ZONES coordinate space as the 2D viewer.
-const PLANE_VBOX_H = 420;
-const VBOX_Y_MARGIN = 20;
+function LoadingIndicator() {
+  return (
+    <View style={styles.loadingOverlay} pointerEvents="none">
+      <Text style={styles.loadingText}>Cargando modelo 3D…</Text>
+    </View>
+  );
+}
 
-export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
-  const rotY = useSharedValue(0);
-  const rotX = useSharedValue(0);
-  const camZ = useSharedValue(INITIAL_CAM_Z);
-  const savedRotY = useSharedValue(0);
-  const savedRotX = useSharedValue(0);
-  const savedCamZ = useSharedValue(INITIAL_CAM_Z);
+class GLBErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error) { console.error('[Anatomy3DScene]', error); }
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={styles.loadingOverlay} pointerEvents="none">
+          <Text style={[styles.loadingText, { color: '#ff6b6b' }]}>
+            Error: {this.state.error.message}
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
-  const groupRef = useRef<THREE.Group | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<Renderer | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const frontPlaneRef = useRef<THREE.Mesh | null>(null);
-  const backPlaneRef = useRef<THREE.Mesh | null>(null);
-  const viewSize = useRef({ width: 0, height: 0 });
-  const rafRef = useRef<number | null>(null);
+function pickInitialId(highlighted: string[] | undefined): string {
+  if (highlighted) {
+    const matched = highlighted.find((id) => ANATOMY_3D_AVAILABLE_IDS.includes(id));
+    if (matched) return matched;
+  }
+  return ANATOMY_3D_AVAILABLE_IDS[0];
+}
 
-  const handleTap = useCallback((x: number, y: number) => {
-    const cam = cameraRef.current;
-    const scene = sceneRef.current;
-    const front = frontPlaneRef.current;
-    const back = backPlaneRef.current;
-    const { width, height } = viewSize.current;
-    if (!cam || !scene || !front || !back || !onMuscleSelect || !width || !height) return;
-
-    const ndc = new THREE.Vector2(
-      (x / width) * 2 - 1,
-      -((y / height) * 2 - 1),
-    );
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(ndc, cam);
-    const intersects = raycaster.intersectObjects([front, back], false);
-    if (intersects.length === 0) return;
-
-    const camDir = new THREE.Vector3();
-    cam.getWorldDirection(camDir);
-
-    const visible = intersects.find((h) => {
-      if (!h.face) return false;
-      const worldNormal = h.face.normal
-        .clone()
-        .applyQuaternion(h.object.getWorldQuaternion(new THREE.Quaternion()));
-      return worldNormal.dot(camDir) < 0;
-    });
-    if (!visible || !visible.uv) return;
-
-    const isFront = visible.object === front;
-    const u = visible.uv.x;
-    const v = visible.uv.y;
-    const vx = (isFront ? u : 1 - u) * 300;
-    const vy = VBOX_Y_MARGIN + (1 - v) * PLANE_VBOX_H;
-    const view: BodyView = isFront ? 'front' : 'back';
-    const muscleId = findMuscleAtPoint(view, vx, vy);
-    if (muscleId) onMuscleSelect(muscleId);
-  }, [onMuscleSelect]);
-
-  const pan = Gesture.Pan()
-    .maxPointers(1)
-    .onUpdate((e) => {
-      'worklet';
-      rotY.value = savedRotY.value + e.translationX * 0.008;
-      const next = savedRotX.value + e.translationY * 0.008;
-      rotX.value = next < -X_TILT_CLAMP ? -X_TILT_CLAMP : next > X_TILT_CLAMP ? X_TILT_CLAMP : next;
-    })
-    .onEnd(() => {
-      'worklet';
-      savedRotY.value = rotY.value;
-      savedRotX.value = rotX.value;
-    });
-
-  const pinch = Gesture.Pinch()
-    .onUpdate((e) => {
-      'worklet';
-      const next = savedCamZ.value / e.scale;
-      camZ.value = next < MIN_CAM_Z ? MIN_CAM_Z : next > MAX_CAM_Z ? MAX_CAM_Z : next;
-    })
-    .onEnd(() => {
-      'worklet';
-      savedCamZ.value = camZ.value;
-    });
-
-  const doubleTap = Gesture.Tap()
-    .numberOfTaps(2)
-    .maxDelay(250)
-    .onEnd(() => {
-      'worklet';
-      rotY.value = 0;
-      rotX.value = 0;
-      camZ.value = INITIAL_CAM_Z;
-      savedRotY.value = 0;
-      savedRotX.value = 0;
-      savedCamZ.value = INITIAL_CAM_Z;
-    });
-
-  const singleTap = Gesture.Tap()
-    .numberOfTaps(1)
-    .maxDuration(300)
-    .maxDistance(8)
-    .onEnd((e) => {
-      'worklet';
-      runOnJS(handleTap)(e.x, e.y);
-    });
-
-  const composed = Gesture.Exclusive(
-    doubleTap,
-    Gesture.Simultaneous(pan, pinch),
-    singleTap,
+export function Anatomy3DScene({
+  highlightedMuscles,
+  onMuscleSelect,
+}: Anatomy3DSceneProps) {
+  const [activeId, setActiveId] = useState<string>(() =>
+    pickInitialId(highlightedMuscles)
   );
 
-  const onContextCreate = async (gl: ExpoWebGLRenderingContext) => {
-    const width = gl.drawingBufferWidth;
-    const height = gl.drawingBufferHeight;
-    if (!viewSize.current.width || !viewSize.current.height) {
-      viewSize.current = { width, height };
-    }
+  // If the parent updates highlightedMuscles to a 3D-available id, follow it.
+  useEffect(() => {
+    const target = highlightedMuscles?.find((id) =>
+      ANATOMY_3D_AVAILABLE_IDS.includes(id)
+    );
+    if (target && target !== activeId) setActiveId(target);
+    // activeId intentionally excluded — we only sync on highlightedMuscles change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightedMuscles]);
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(colors.bg.primary);
+  const activeMuscle = muscles.find((m) => m.id === activeId);
+  const asset = ANATOMY_3D_MODELS[activeId];
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, INITIAL_CAM_Z);
-
-    // MeshBasicMaterial ignores lights — the PNG textures already carry painted shading.
-    // Adding ambient/directional lights had no visual effect and wasted setup cost.
-
-    const loader = new TextureLoader();
-    const loadTexture = async (mod: number): Promise<THREE.Texture> => {
-      const asset = Asset.fromModule(mod);
-      await asset.downloadAsync();
-      const uri = asset.localUri || asset.uri;
-      const tex = await new Promise<THREE.Texture>((resolve, reject) => {
-        loader.load(uri, resolve, undefined, reject);
-      });
-      tex.generateMipmaps = true;
-      tex.minFilter = THREE.LinearMipMapLinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      return tex;
-    };
-
-    const [frontTex, backTex] = await Promise.all([
-      loadTexture(FRONT_ASSET),
-      loadTexture(BACK_ASSET),
-    ]);
-
-    const geom = new THREE.PlaneGeometry(3, 4.2);
-    const frontMat = new THREE.MeshBasicMaterial({
-      map: frontTex,
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    const backMat = new THREE.MeshBasicMaterial({
-      map: backTex,
-      transparent: true,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-
-    const front = new THREE.Mesh(geom, frontMat);
-    const back = new THREE.Mesh(geom, backMat);
-    back.rotation.y = Math.PI;
-    front.renderOrder = 1;
-    back.renderOrder = 1;
-
-    const group = new THREE.Group();
-    group.add(front);
-    group.add(back);
-    scene.add(group);
-
-    const renderer = new Renderer({ gl });
-    renderer.setSize(width, height);
-    renderer.setClearColor(new THREE.Color(colors.bg.primary), 1);
-    // Cap at 2x to avoid excessive fill cost on 3x density screens (Pixel 7+ etc).
-    renderer.setPixelRatio(Math.min(PixelRatio.get(), 2));
-
-    sceneRef.current = scene;
-    cameraRef.current = camera;
-    rendererRef.current = renderer;
-    groupRef.current = group;
-    frontPlaneRef.current = front;
-    backPlaneRef.current = back;
-
-    const tick = () => {
-      const g = groupRef.current;
-      const c = cameraRef.current;
-      const r = rendererRef.current;
-      const s = sceneRef.current;
-      if (!g || !c || !r || !s) return;
-      // Reading shared values from JS thread is safe and bridge-free; the worklet writes
-      // happen on UI thread without crossing into JS for every gesture event.
-      g.rotation.y = rotY.value;
-      g.rotation.x = rotX.value;
-      c.position.z = camZ.value;
-      r.render(s, c);
-      gl.endFrameEXP();
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    tick();
+  const handleSelect = (id: string) => {
+    setActiveId(id);
+    onMuscleSelect?.(id);
   };
 
-  useEffect(() => {
-    return () => {
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      sceneRef.current = null;
-      cameraRef.current = null;
-      rendererRef.current = null;
-      groupRef.current = null;
-      frontPlaneRef.current = null;
-      backPlaneRef.current = null;
-    };
-  }, []);
-
   return (
-    <GestureDetector gesture={composed}>
-      <View
-        style={styles.container}
-        collapsable={false}
-        onLayout={(e) => {
-          viewSize.current = {
-            width: e.nativeEvent.layout.width,
-            height: e.nativeEvent.layout.height,
-          };
-        }}
+    <View style={styles.container}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsRow}
       >
-        <GLView style={styles.gl} onContextCreate={onContextCreate} />
+        {ANATOMY_3D_AVAILABLE_IDS.map((id) => {
+          const m = muscles.find((mm) => mm.id === id);
+          if (!m) return null;
+          const active = id === activeId;
+          return (
+            <Pressable
+              key={id}
+              onPress={() => handleSelect(id)}
+              style={[styles.chip, active && styles.chipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {m.name_es}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <View style={styles.canvasWrapper}>
+        <GLBErrorBoundary>
+          <Canvas camera={{ position: [0, 0, 4], fov: 45 }} style={styles.canvas}>
+            <ambientLight intensity={0.55} />
+            <directionalLight position={[5, 5, 5]} intensity={1.2} />
+            <directionalLight
+              position={[-3, 2, -4]}
+              intensity={0.4}
+              color="#a8c8ff"
+            />
+            <Suspense fallback={null}>
+              <Bounds fit clip observe margin={1.4} key={activeId}>
+                <MuscleModel asset={asset} />
+              </Bounds>
+            </Suspense>
+            <OrbitControls enablePan={false} />
+          </Canvas>
+          <LoadingIndicator />
+        </GLBErrorBoundary>
       </View>
-    </GestureDetector>
+
+      {activeMuscle && (
+        <View style={styles.footer}>
+          <Text style={styles.footerName}>{activeMuscle.name_es}</Text>
+          <Text style={styles.footerLatin}>{activeMuscle.name_latin}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
     backgroundColor: colors.bg.primary,
   },
-  gl: { flex: 1 },
+  chipsRow: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: colors.bg.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipActive: {
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
+  },
+  chipText: {
+    ...typography.body.small,
+    color: colors.text.muted,
+  },
+  chipTextActive: {
+    color: colors.bg.primary,
+    fontWeight: '600',
+  },
+  canvasWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  canvas: {
+    flex: 1,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: -1,
+  },
+  loadingText: {
+    color: colors.accent.light,
+    fontSize: 14,
+  },
+  footer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  footerName: {
+    ...typography.heading.h3,
+    fontFamily: typography.heading.fontFamily,
+    color: colors.accent.light,
+  },
+  footerLatin: {
+    ...typography.body.small,
+    fontStyle: 'italic',
+    color: colors.text.muted,
+  },
 });
