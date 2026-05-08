@@ -43,7 +43,7 @@ const navTheme = {
 type AuthScreen = 'login' | 'register' | 'verify';
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ PlayfairDisplay_700Bold });
+  const [fontsLoaded, fontsError] = useFonts({ PlayfairDisplay_700Bold });
   const onboardingComplete = useAppStore((s) => s.onboardingComplete);
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const setIsAuthenticated = useAppStore((s) => s.setIsAuthenticated);
@@ -55,6 +55,25 @@ export default function App() {
   const [pendingPassword, setPendingPassword] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+
+  // Font loading fallback: if useFonts hangs (which happened in earlier
+  // sessions and required a hack), unblock the app after 3 seconds. The UI
+  // degrades gracefully to the system font for Playfair text rather than
+  // staying blank forever. Real loading still sets fontsLoaded as soon as
+  // expo-font finishes.
+  const [fontsTimeout, setFontsTimeout] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setFontsTimeout(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (fontsError) {
+      console.warn('[App] useFonts error — falling back to system font:', fontsError);
+    }
+  }, [fontsError]);
+
+  const fontsReady = fontsLoaded || !!fontsError || fontsTimeout;
 
   useEffect(() => {
     async function setup() {
@@ -105,10 +124,7 @@ export default function App() {
     }
   }, [fontsLoaded]);
 
-  // DIAGNOSTIC: temporarily skip fontsLoaded gate to test if useFonts is the
-  // reason the entire app is rendering blank. If removing this gate makes the
-  // app appear, useFonts is hung — root cause is the font asset bundling.
-  if (!authChecked) return null;
+  if (!fontsReady || !authChecked) return null;
 
   if (showAnimatedSplash) {
     return (
