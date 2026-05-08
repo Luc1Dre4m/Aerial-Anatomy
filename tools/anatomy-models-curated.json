@@ -1,5 +1,5 @@
 {
-  "$comment": "Curated FMA → muscleId mapping for the 10 priority muscles in aerial arts. Each entry lists all anatomical sub-parts that compose the muscle as users perceive it. Source: BodyParts3D (Kevin-Mattheus-Moerman mirror), CC BY-SA 2.1 Japan. The remaining 26 muscles will be curated incrementally with Álvaro's anatomical validation.",
+  "$comment": "Curated FMA → muscleId mapping for the 36 muscles in src/data/muscles.ts. Each entry lists all anatomical sub-parts that compose the muscle as users perceive it. Source: BodyParts3D (Kevin-Mattheus-Moerman mirror), CC BY-SA 2.1 Japan. Empty fma arrays indicate the muscle has no STL in the dataset (e.g. scalenes — only aggregates exist, all return 404).",
   "models": {
     "m_pectoral_mayor": {
       "color": "0xC2412B",
@@ -33,21 +33,46 @@
         "FMA33581", "FMA33583"
       ]
     },
-    "m_biceps": {
+    "m_trapecio_inferior": {
       "color": "0xC2412B",
-      "label_es": "Bíceps braquial (long + short head × 2)",
+      "label_es": "Trapecio inferior (ascending part × 2)",
+      "fma": ["FMA33581", "FMA33583"]
+    },
+    "m_serrato_anterior": {
+      "color": "0xC2412B",
+      "label_es": "Serrato anterior",
+      "fma": ["FMA13398", "FMA13399"]
+    },
+    "m_romboides": {
+      "color": "0xC2412B",
+      "label_es": "Romboides (mayor + menor × 2)",
       "fma": [
-        "FMA37684", "FMA37685",
-        "FMA37686", "FMA37687"
+        "FMA13381", "FMA13382",
+        "FMA13383", "FMA13384"
       ]
     },
-    "m_triceps": {
+    "m_erector_espinal": {
       "color": "0xC2412B",
-      "label_es": "Tríceps braquial (long + lateral + medial head × 2)",
+      "label_es": "Erector espinal (iliocostalis + longissimus + spinalis)",
       "fma": [
-        "FMA37695", "FMA37696",
-        "FMA37697", "FMA37698",
-        "FMA37699", "FMA37700"
+        "FMA22740", "FMA22741",
+        "FMA22709", "FMA22711",
+        "FMA22765"
+      ]
+    },
+    "m_infraespinoso": {
+      "color": "0xC2412B",
+      "label_es": "Infraespinoso",
+      "fma": ["FMA32547", "FMA32548"]
+    },
+    "m_manguito_rotador": {
+      "color": "0xC2412B",
+      "label_es": "Manguito rotador (4 músculos × 2)",
+      "fma": [
+        "FMA32544", "FMA32545",
+        "FMA32547", "FMA32548",
+        "FMA32553", "FMA32554",
+        "FMA13414", "FMA13415"
       ]
     },
     "m_recto_abdominal": {
@@ -60,10 +85,122 @@
       "label_es": "Oblicuo externo",
       "fma": ["FMA13336", "FMA13337"]
     },
+    "m_oblicuo_interno": {
+      "color": "0xC2412B",
+      "label_es": "Oblicuo interno",
+      "fma": ["FMA13892", "FMA13893"]
+    },
+    "m_transverso": {
+      "color": "0xC2412B",
+      "label_es": "Transverso del abdomen",
+      "fma": ["FMA22344", "FMA22345"]
+    },
+    "m_diafragma": {
+      "color": "0xC2412B",
+      "label_es": "Diafragma",
+      "fma": ["FMA13295"]
+    },
+    "m_multifidos": {
+      "color": "0xC2412B",
+      "label_es": "Multífidos",
+      "fma": ["FMA22878", "FMA22879"]
+    },
+    "m_biceps": {
+      "color": "0xC2412B",
+      "label_es": "Bíceps braquial (long + short head × 2)",
+      "fma": [
+        "FMA37684", "FMA37685",
+        "FMA37686", "FMA37687"
+      ]
+    },
+    "m_triceps": {
+      "color": "0xC2412B",
+      "label_es": "Tríceps braquial (long + lateral + medial × 2)",
+      "fma": [
+        "FMA37695", "FMA37696",
+        "FMA37697", "FMA37698",
+        "FMA37699", "FMA37700"
+      ]
+    },
+    "m_braquial": {
+      "color": "0xC2412B",
+      "label_es": "Braquial",
+      "fma": ["FMA37668", "FMA37669"]
+    },
+    "m_braquiorradial": {
+      "color": "0xC2412B",
+      "label_es": "Braquiorradial",
+      "fma": ["FMA38486", "FMA38487"]
+    },
+    "m_flexores_dedos": {
+      "color": "0xC2412B",
+      "label_es": "Flexores de los dedos (profundus + superficialis × 2)",
+      "fma": [
+        "FMA38479", "FMA38480",
+        "FMA38638", "FMA38639",
+        "FMA38640", "FMA38641"
+      ]
+    },
+    "m_extensores_muneca": {
+      "color": "0xC2412B",
+      "label_es": "Extensores de muñeca (carpi radialis longus/brevis + ulnaris × 2)",
+      "fma": [
+        "FMA38495", "FMA38496",
+        "FMA38498", "FMA38499",
+        "FMA38507", "FMA38508"
+      ]
+    },
+    "m_flexores_muneca": {
+      "color": "0xC2412B",
+      "label_es": "Flexores de muñeca (carpi radialis + carpi ulnaris × 2)",
+      "fma": [
+        "FMA38460", "FMA38461",
+        "FMA38617", "FMA38618",
+        "FMA38619", "FMA38620"
+      ]
+    },
+    "m_flexores_antebrazo": {
+      "color": "0xC2412B",
+      "label_es": "Flexores del antebrazo (compartimento anterior)",
+      "fma": [
+        "FMA38460", "FMA38461",
+        "FMA38463", "FMA38464",
+        "FMA38479", "FMA38480",
+        "FMA38560", "FMA38561",
+        "FMA38562", "FMA38563"
+      ]
+    },
     "m_gluteo_mayor": {
       "color": "0xC2412B",
       "label_es": "Glúteo mayor",
       "fma": ["FMA22328", "FMA22329"]
+    },
+    "m_gluteo_medio": {
+      "color": "0xC2412B",
+      "label_es": "Glúteo medio",
+      "fma": ["FMA22330", "FMA22331"]
+    },
+    "m_iliopsoas": {
+      "color": "0xC2412B",
+      "label_es": "Iliopsoas (iliacus + psoas major × 2)",
+      "fma": [
+        "FMA22322", "FMA22323",
+        "FMA22342", "FMA22343"
+      ]
+    },
+    "m_piriforme": {
+      "color": "0xC2412B",
+      "label_es": "Piriforme",
+      "fma": ["FMA22340", "FMA22341"]
+    },
+    "m_aductores": {
+      "color": "0xC2412B",
+      "label_es": "Aductores (longus + brevis + magnus × 2)",
+      "fma": [
+        "FMA22456", "FMA22457",
+        "FMA22452", "FMA22454",
+        "FMA22459", "FMA22460"
+      ]
     },
     "m_cuadriceps": {
       "color": "0xC2412B",
@@ -74,6 +211,45 @@
         "FMA38932", "FMA38933",
         "FMA38934", "FMA38935"
       ]
+    },
+    "m_isquiotibiales": {
+      "color": "0xC2412B",
+      "label_es": "Isquiotibiales (biceps femoris + semitendinosus + semimembranosus × 2)",
+      "fma": [
+        "FMA45888", "FMA45889",
+        "FMA45891", "FMA45892",
+        "FMA22358", "FMA22359",
+        "FMA22448", "FMA22449"
+      ]
+    },
+    "m_gemelos": {
+      "color": "0xC2412B",
+      "label_es": "Gemelos / gastrocnemius (medial + lateral head × 2)",
+      "fma": [
+        "FMA45957", "FMA45958",
+        "FMA45960", "FMA45961"
+      ]
+    },
+    "m_soleo": {
+      "color": "0xC2412B",
+      "label_es": "Sóleo",
+      "fma": ["FMA22558", "FMA22559"]
+    },
+    "m_tibial_anterior": {
+      "color": "0xC2412B",
+      "label_es": "Tibial anterior",
+      "fma": ["FMA22544", "FMA22545"]
+    },
+    "m_esternocleidomastoideo": {
+      "color": "0xC2412B",
+      "label_es": "Esternocleidomastoideo",
+      "fma": ["FMA13408", "FMA13409"]
+    },
+    "m_escalenos": {
+      "color": "0xC2412B",
+      "label_es": "Escalenos (anterior + medius + posterior)",
+      "fma": [],
+      "$note": "BodyParts3D only ships aggregate FMA13385/86/87 entries which return 404. No usable STL for scalenes; the muscle has no 3D model. Consider sourcing from Sketchfab CC or building manually."
     }
   }
 }
