@@ -9,8 +9,10 @@ import * as THREE from 'three';
 import {
   ANATOMY_3D_MODELS,
   ANATOMY_3D_AVAILABLE_IDS,
+  hasAnatomy3DModel,
 } from '../../data/anatomy3DAssets';
 import { muscles } from '../../data/muscles';
+import { chains } from '../../data/chains';
 import { colors, spacing, typography } from '../../theme';
 
 interface Anatomy3DSceneProps {
@@ -23,6 +25,13 @@ const HIGHLIGHT_COLOR = new THREE.Color(0xd4a843); // theme accent gold
 const BASE_COLOR = new THREE.Color(0xc2412b); // anatomical muscle red
 const SELECTED_EMISSIVE_INTENSITY = 0.6;
 
+const CHAIN_COLORS: Record<string, THREE.Color> = {
+  chain_anterior: new THREE.Color(0xe74c3c),
+  chain_posterior: new THREE.Color(0x3498db),
+  chain_lateral: new THREE.Color(0xf39c12),
+  chain_espiral: new THREE.Color(0x9b59b6),
+};
+
 /**
  * One muscle group rendered into the shared scene at its native anatomical
  * coordinates (preserved from BodyParts3D). Each mesh is tagged with its
@@ -33,11 +42,13 @@ function MuscleGroup({
   muscleId,
   asset,
   selected,
+  highlightColor,
   onSelect,
 }: {
   muscleId: string;
   asset: number;
   selected: boolean;
+  highlightColor?: THREE.Color;
   onSelect: (id: string) => void;
 }) {
   // useGLTF accepts RN asset module IDs at runtime even though its types want a string.
@@ -63,15 +74,17 @@ function MuscleGroup({
   }, [gltf, muscleId]);
 
   // Update emissive only on the meshes of THIS group when its `selected`
-  // prop flips. We avoid touching other groups, so swapping selection from
-  // muscle A to muscle B touches just A's and B's materials, not all six.
+  // prop flips. Chain mode passes `highlightColor`; individual selection
+  // falls back to the gold accent. We avoid touching other groups, so
+  // swapping selection touches just the affected materials.
   useEffect(() => {
+    const tint = highlightColor ?? HIGHLIGHT_COLOR;
     gltf.scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
       const mat = mesh.material as THREE.MeshStandardMaterial;
       if (selected) {
-        mat.emissive.copy(HIGHLIGHT_COLOR);
+        mat.emissive.copy(tint);
         mat.emissiveIntensity = SELECTED_EMISSIVE_INTENSITY;
       } else {
         mat.emissive.setHex(0x000000);
@@ -79,7 +92,7 @@ function MuscleGroup({
       }
       mat.needsUpdate = true;
     });
-  }, [selected, gltf]);
+  }, [selected, highlightColor, gltf]);
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
@@ -182,10 +195,26 @@ function CenteredBody({ children, recenterKey }: { children: React.ReactNode; re
 
 export function Anatomy3DScene({ onMuscleSelect, onViewDetail }: Anatomy3DSceneProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedChainId, setSelectedChainId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   // Bumped each time we want CenteredBody to recompute its centering offset
   // (after all GLBs have settled).
   const [recenterTick, setRecenterTick] = useState(0);
+
+  // Resolve which muscle ids are highlighted (chain takes priority over
+  // individual selection; selecting a muscle clears the chain).
+  const activeChain = selectedChainId
+    ? chains.find((c) => c.id === selectedChainId) ?? null
+    : null;
+  const chainMuscleIds = new Set(
+    activeChain?.muscles_ordered
+      .map((m) => m.muscle_id)
+      .filter((id) => hasAnatomy3DModel(id)) ?? []
+  );
+  const chainHighlightColor =
+    selectedChainId && CHAIN_COLORS[selectedChainId]
+      ? CHAIN_COLORS[selectedChainId]
+      : undefined;
 
   // Camera distance is updated by the pinch handler (outside the Canvas) and
   // applied on every frame by CameraDistanceController. Using a ref instead
@@ -216,7 +245,18 @@ export function Anatomy3DScene({ onMuscleSelect, onViewDetail }: Anatomy3DSceneP
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
+    setSelectedChainId(null); // tapping a muscle exits chain mode
     onMuscleSelect?.(id);
+  };
+
+  const handleChainSelect = (chainId: string) => {
+    if (selectedChainId === chainId) {
+      // Tapping the active chain again clears it.
+      setSelectedChainId(null);
+    } else {
+      setSelectedChainId(chainId);
+      setSelectedId(null);
+    }
   };
 
   const selectedMuscle = selectedId
@@ -225,6 +265,42 @@ export function Anatomy3DScene({ onMuscleSelect, onViewDetail }: Anatomy3DSceneP
 
   return (
     <View style={styles.container}>
+      {/* Chain selector — chips for biomechanical chains. Tap to highlight
+          all member muscles of a chain at once with the chain's signature
+          color; tap again to clear. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chainChipsRow}
+      >
+        {chains.map((c) => {
+          const active = selectedChainId === c.id;
+          const tint = CHAIN_COLORS[c.id] ?? HIGHLIGHT_COLOR;
+          const tintHex = `#${tint.getHexString()}`;
+          return (
+            <Pressable
+              key={c.id}
+              onPress={() => handleChainSelect(c.id)}
+              style={[
+                styles.chainChip,
+                active && { backgroundColor: tintHex, borderColor: tintHex },
+              ]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text
+                style={[
+                  styles.chainChipText,
+                  active && styles.chainChipTextActive,
+                ]}
+              >
+                {c.name_es}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
       <GestureDetector gesture={pinch}>
         <View style={styles.canvasWrapper}>
           <GLBErrorBoundary>
@@ -255,15 +331,22 @@ export function Anatomy3DScene({ onMuscleSelect, onViewDetail }: Anatomy3DSceneP
             />
             <Suspense fallback={null}>
               <CenteredBody recenterKey={recenterTick}>
-                {ANATOMY_3D_AVAILABLE_IDS.map((id) => (
-                  <MuscleGroup
-                    key={id}
-                    muscleId={id}
-                    asset={ANATOMY_3D_MODELS[id]}
-                    selected={selectedId === id}
-                    onSelect={handleSelect}
-                  />
-                ))}
+                {ANATOMY_3D_AVAILABLE_IDS.map((id) => {
+                  const isInChain = chainMuscleIds.has(id);
+                  const isSelected = selectedChainId
+                    ? isInChain
+                    : selectedId === id;
+                  return (
+                    <MuscleGroup
+                      key={id}
+                      muscleId={id}
+                      asset={ANATOMY_3D_MODELS[id]}
+                      selected={isSelected}
+                      highlightColor={isInChain ? chainHighlightColor : undefined}
+                      onSelect={handleSelect}
+                    />
+                  );
+                })}
               </CenteredBody>
               <ReadySignal
                 onReady={() => {
@@ -294,7 +377,30 @@ export function Anatomy3DScene({ onMuscleSelect, onViewDetail }: Anatomy3DSceneP
       </GestureDetector>
 
       <View style={styles.footer}>
-        {selectedMuscle ? (
+        {activeChain ? (
+          <ScrollView style={styles.footerScroll} showsVerticalScrollIndicator={false}>
+            <Text style={styles.footerName}>{activeChain.name_es}</Text>
+            <Text style={styles.footerLatin}>{activeChain.name_en}</Text>
+            <Text style={styles.footerSection}>Descripción</Text>
+            <Text style={styles.footerBody}>{activeChain.description_es}</Text>
+            <Text style={styles.footerSection}>Relevancia para artes aéreas</Text>
+            <Text style={styles.footerBody}>{activeChain.relevance_es}</Text>
+            <Text style={styles.footerSection}>
+              Músculos en la cadena ({activeChain.muscles_ordered.length})
+            </Text>
+            {activeChain.muscles_ordered.map((m) => {
+              const muscle = muscles.find((mm) => mm.id === m.muscle_id);
+              if (!muscle) return null;
+              const has3D = hasAnatomy3DModel(m.muscle_id);
+              return (
+                <Text key={m.muscle_id} style={styles.footerBody}>
+                  {m.position_in_chain}. {muscle.name_es}
+                  {has3D ? '' : ' (sin modelo 3D)'}
+                </Text>
+              );
+            })}
+          </ScrollView>
+        ) : selectedMuscle ? (
           <>
             <ScrollView style={styles.footerScroll} showsVerticalScrollIndicator={false}>
               <Text style={styles.footerName}>{selectedMuscle.name_es}</Text>
@@ -328,7 +434,9 @@ export function Anatomy3DScene({ onMuscleSelect, onViewDetail }: Anatomy3DSceneP
             )}
           </>
         ) : (
-          <Text style={styles.footerHint}>Toca un músculo para seleccionarlo</Text>
+          <Text style={styles.footerHint}>
+            Toca un músculo para seleccionarlo o elegí una cadena arriba
+          </Text>
         )}
       </View>
     </View>
@@ -339,6 +447,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg.primary,
+  },
+  chainChipsRow: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+    gap: spacing.xs,
+    flexGrow: 0,
+  },
+  chainChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: colors.bg.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chainChipText: {
+    ...typography.body.small,
+    color: colors.text.muted,
+    fontSize: 12,
+  },
+  chainChipTextActive: {
+    color: '#000000',
+    fontWeight: '700',
   },
   canvasWrapper: {
     flex: 1,
