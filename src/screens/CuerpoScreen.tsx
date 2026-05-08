@@ -210,7 +210,7 @@ export function CuerpoScreen() {
         )}
       </View>
 
-      {tooltipMuscleId && (
+      {tooltipMuscleId && viewMode === '2d' && (
         <>
           <Pressable
             style={StyleSheet.absoluteFill}
@@ -248,6 +248,10 @@ export function CuerpoScreen() {
             ))}
           </ScrollView>
         </View>
+      ) : viewMode === '3d' && tooltipMuscleId ? (
+        // In 3D mode the scene's own footer already shows the selected muscle —
+        // hide the "Músculo del día" card so it doesn't compete for attention.
+        null
       ) : (
         <View style={styles.hint}>
           <Text style={styles.hintText}>{t('body.tapToExplore')}</Text>

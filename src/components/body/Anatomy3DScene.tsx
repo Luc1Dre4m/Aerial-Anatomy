@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Canvas, ThreeEvent } from '@react-three/fiber/native';
-import { useGLTF, OrbitControls, Bounds } from '@react-three/drei/native';
+import { useGLTF, OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import type { GLTF } from 'three-stdlib';
 import * as THREE from 'three';
 import {
@@ -59,19 +59,22 @@ function MuscleGroup({
     });
   }, [gltf, muscleId]);
 
-  // Update emissive on selection change without re-traversing materials.
+  // Update emissive only on the meshes of THIS group when its `selected`
+  // prop flips. We avoid touching other groups, so swapping selection from
+  // muscle A to muscle B touches just A's and B's materials, not all six.
   useEffect(() => {
     gltf.scene.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        const mat = (obj as THREE.Mesh).material as THREE.MeshStandardMaterial;
-        if (selected) {
-          mat.emissive.copy(HIGHLIGHT_COLOR);
-          mat.emissiveIntensity = SELECTED_EMISSIVE_INTENSITY;
-        } else {
-          mat.emissive.setHex(0x000000);
-          mat.emissiveIntensity = 0;
-        }
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      if (selected) {
+        mat.emissive.copy(HIGHLIGHT_COLOR);
+        mat.emissiveIntensity = SELECTED_EMISSIVE_INTENSITY;
+      } else {
+        mat.emissive.setHex(0x000000);
+        mat.emissiveIntensity = 0;
       }
+      mat.needsUpdate = true;
     });
   }, [selected, gltf]);
 
@@ -116,8 +119,43 @@ class GLBErrorBoundary extends React.Component<
   }
 }
 
+function ReadySignal({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
+  return null;
+}
+
+/**
+ * Wraps every muscle group and shifts the wrapper's position so the combined
+ * bounding box is centered at world [0, 0, 0]. Without this, OrbitControls
+ * orbits around the absolute anatomical origin (which sits ~1 km away from
+ * the meshes in BodyParts3D's coordinate system), causing the body to swing
+ * around a point outside itself when the user drags.
+ */
+function CenteredBody({ children, recenterKey }: { children: React.ReactNode; recenterKey: number }) {
+  const innerRef = useRef<THREE.Group | null>(null);
+  useEffect(() => {
+    const group = innerRef.current;
+    if (!group) return;
+    group.position.set(0, 0, 0);
+    group.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(group);
+    if (box.isEmpty()) return;
+    const center = box.getCenter(new THREE.Vector3());
+    group.position.sub(center);
+  }, [recenterKey]);
+
+  return <group ref={innerRef}>{children}</group>;
+}
+
+
 export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  // Bumped each time we want CenteredBody to recompute its centering offset
+  // (after all GLBs have settled).
+  const [recenterTick, setRecenterTick] = useState(0);
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
@@ -132,7 +170,23 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
     <View style={styles.container}>
       <View style={styles.canvasWrapper}>
         <GLBErrorBoundary>
-          <Canvas camera={{ position: [0, 0, 250], fov: 35 }} style={styles.canvas}>
+          <Canvas style={styles.canvas}>
+            {/*
+              Camera fixed at a known distance on -Y looking at origin, with
+              up=+Z so BodyParts3D's anatomical Z (superior axis) maps to
+              screen vertical. No <Bounds> here — its auto-fit was fighting
+              with OrbitControls and the user-set up vector. CenteredBody
+              already pins the body to the origin, so a fixed 1200 mm offset
+              gives a stable starting frame.
+            */}
+            <PerspectiveCamera
+              makeDefault
+              position={[0, -1200, 0]}
+              up={[0, 0, 1]}
+              fov={35}
+              near={1}
+              far={5000}
+            />
             <ambientLight intensity={0.55} />
             <directionalLight position={[100, 100, 100]} intensity={1.2} />
             <directionalLight
@@ -141,7 +195,7 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
               color="#a8c8ff"
             />
             <Suspense fallback={null}>
-              <Bounds fit clip observe margin={1.4}>
+              <CenteredBody recenterKey={recenterTick}>
                 {ANATOMY_3D_AVAILABLE_IDS.map((id) => (
                   <MuscleGroup
                     key={id}
@@ -151,20 +205,56 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
                     onSelect={handleSelect}
                   />
                 ))}
-              </Bounds>
+              </CenteredBody>
+              <ReadySignal
+                onReady={() => {
+                  setReady(true);
+                  setRecenterTick((t) => t + 1);
+                }}
+              />
             </Suspense>
-            <OrbitControls enablePan={false} />
+            {/*
+              OrbitControls only — CameraControls turned out to use DOM APIs
+              (domElement.setAttribute) that don't exist in react-native and
+              crash the canvas. Zoom is disabled here because OrbitControls'
+              two-finger dolly handler in react-native has a known bug
+              ("Cannot read property 'x' of undefined") on touch start.
+              Pinch zoom will need a custom gesture-handler implementation.
+            */}
+            <OrbitControls
+              enablePan={false}
+              enableZoom={false}
+              enableDamping={false}
+              rotateSpeed={1.0}
+              target={[0, 0, 0]}
+            />
           </Canvas>
-          <LoadingIndicator />
+          {!ready && <LoadingIndicator />}
         </GLBErrorBoundary>
       </View>
 
       <View style={styles.footer}>
         {selectedMuscle ? (
-          <>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.footerName}>{selectedMuscle.name_es}</Text>
             <Text style={styles.footerLatin}>{selectedMuscle.name_latin}</Text>
-          </>
+            <Text style={styles.footerSection}>Función</Text>
+            <Text style={styles.footerBody}>{selectedMuscle.primary_function_es}</Text>
+            <Text style={styles.footerSection}>Descripción</Text>
+            <Text style={styles.footerBody}>{selectedMuscle.description_es}</Text>
+            <Text style={styles.footerSection}>Origen → Inserción</Text>
+            <Text style={styles.footerBody}>
+              {selectedMuscle.origin_es}
+              {'\n→ '}
+              {selectedMuscle.insertion_es}
+            </Text>
+            {selectedMuscle.innervation && (
+              <>
+                <Text style={styles.footerSection}>Inervación</Text>
+                <Text style={styles.footerBody}>{selectedMuscle.innervation}</Text>
+              </>
+            )}
+          </ScrollView>
         ) : (
           <Text style={styles.footerHint}>Toca un músculo para seleccionarlo</Text>
         )}
@@ -193,7 +283,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: -1,
   },
   loadingText: {
     color: colors.accent.light,
@@ -205,6 +294,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     minHeight: 56,
+    maxHeight: 280,
   },
   footerName: {
     ...typography.heading.h3,
@@ -215,6 +305,20 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     fontStyle: 'italic',
     color: colors.text.muted,
+    marginBottom: spacing.sm,
+  },
+  footerSection: {
+    ...typography.body.small,
+    color: colors.accent.primary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: spacing.sm,
+  },
+  footerBody: {
+    ...typography.body.small,
+    color: colors.text.primary,
+    marginTop: 2,
   },
   footerHint: {
     ...typography.body.small,

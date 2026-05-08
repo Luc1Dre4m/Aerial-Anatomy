@@ -29,17 +29,21 @@ const M_GLUTEO_MAYOR = require('../../assets/3d-models/m_gluteo_mayor.glb');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const M_CUADRICEPS = require('../../assets/3d-models/m_cuadriceps.glb');
 
+// 6 muscles enabled (~72 MB raw). Heavier ones (dorsal 32 MB, recto 27 MB,
+// cuadriceps 43 MB, oblicuo externo 78 MB) are pending decimation — including
+// them all together makes rotation lag noticeably on mid-tier devices.
 export const ANATOMY_3D_MODELS: Record<string, number> = {
-  m_pectoral_mayor: M_PECTORAL_MAYOR,
-  m_dorsal_ancho: M_DORSAL_ANCHO,
-  m_deltoides: M_DELTOIDES,
-  m_trapecio: M_TRAPECIO,
-  m_biceps: M_BICEPS,
-  m_triceps: M_TRICEPS,
-  m_recto_abdominal: M_RECTO_ABDOMINAL,
-  // m_oblicuo_externo: see comment above — temporarily excluded.
-  m_gluteo_mayor: M_GLUTEO_MAYOR,
-  m_cuadriceps: M_CUADRICEPS,
+  m_pectoral_mayor: M_PECTORAL_MAYOR,  // 7.6 MB
+  m_deltoides: M_DELTOIDES,            // 14.8 MB
+  m_trapecio: M_TRAPECIO,              // 20.9 MB
+  m_biceps: M_BICEPS,                  // 8.8 MB
+  m_triceps: M_TRICEPS,                // 14.6 MB
+  m_gluteo_mayor: M_GLUTEO_MAYOR,      // 4.8 MB
+  // Pending decimation (raw too heavy for smooth rotation):
+  // m_dorsal_ancho: M_DORSAL_ANCHO,      // 32 MB
+  // m_recto_abdominal: M_RECTO_ABDOMINAL, // 27 MB
+  // m_cuadriceps: M_CUADRICEPS,           // 43 MB
+  // m_oblicuo_externo: M_OBLICUO_EXTERNO, // 78 MB
 };
 
 export const ANATOMY_3D_AVAILABLE_IDS: readonly string[] = Object.keys(ANATOMY_3D_MODELS);

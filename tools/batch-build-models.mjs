@@ -70,6 +70,13 @@ function loadSTLAsMesh(stlPath, material) {
   const geometry = new STLLoader().parse(arrayBuffer);
   geometry.computeVertexNormals();
   return new THREE.Mesh(geometry, material);
+  // NOTE: a meshoptimizer-based decimation pass was attempted (see git log)
+  // but BodyParts3D meshes resist aggressive collapse — meshopt's simplify
+  // plateaus at ~5% reduction even across 4 passes with permissive error.
+  // True low-poly anatomy needs purpose-built models (Quad Remesher, manual
+  // retopo, or licensed assets). Lag on rotation is currently bounded by
+  // raw polycount; mitigations live in the viewer (smaller registry, fewer
+  // simultaneous models) rather than this build step.
 }
 
 function exportGLB(scene) {
