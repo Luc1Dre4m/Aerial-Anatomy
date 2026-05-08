@@ -1,7 +1,9 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Canvas, ThreeEvent } from '@react-three/fiber/native';
+import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber/native';
 import { useGLTF, OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import type { GLTF } from 'three-stdlib';
 import * as THREE from 'three';
 import {
@@ -126,6 +128,33 @@ function ReadySignal({ onReady }: { onReady: () => void }) {
   return null;
 }
 
+const MIN_CAM_DISTANCE = 400;
+const MAX_CAM_DISTANCE = 3000;
+
+/**
+ * Reads a desired camera distance (from the origin, where the body is
+ * centered) and applies it on every frame. The pinch handler outside the
+ * Canvas updates the ref, so this stays cheap (no extra renders) and works
+ * alongside OrbitControls' rotation handling.
+ */
+function CameraDistanceController({
+  desiredDistanceRef,
+}: {
+  desiredDistanceRef: React.MutableRefObject<number>;
+}) {
+  useFrame(({ camera }) => {
+    const target = new THREE.Vector3(0, 0, 0);
+    const offset = camera.position.clone().sub(target);
+    const currentDistance = offset.length();
+    const desired = desiredDistanceRef.current;
+    if (Math.abs(currentDistance - desired) > 0.5) {
+      offset.setLength(desired);
+      camera.position.copy(target).add(offset);
+    }
+  });
+  return null;
+}
+
 /**
  * Wraps every muscle group and shifts the wrapper's position so the combined
  * bounding box is centered at world [0, 0, 0]. Without this, OrbitControls
@@ -157,6 +186,33 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
   // (after all GLBs have settled).
   const [recenterTick, setRecenterTick] = useState(0);
 
+  // Camera distance is updated by the pinch handler (outside the Canvas) and
+  // applied on every frame by CameraDistanceController. Using a ref instead
+  // of state keeps the gesture path off React's render cycle.
+  const desiredDistanceRef = useRef(1200);
+  const pinchBaselineRef = useRef(1200);
+
+  const updateDistance = (next: number) => {
+    desiredDistanceRef.current = Math.max(
+      MIN_CAM_DISTANCE,
+      Math.min(MAX_CAM_DISTANCE, next)
+    );
+  };
+
+  const commitDistance = () => {
+    pinchBaselineRef.current = desiredDistanceRef.current;
+  };
+
+  const pinch = Gesture.Pinch()
+    .onUpdate((e) => {
+      'worklet';
+      runOnJS(updateDistance)(pinchBaselineRef.current / e.scale);
+    })
+    .onEnd(() => {
+      'worklet';
+      runOnJS(commitDistance)();
+    });
+
   const handleSelect = (id: string) => {
     setSelectedId(id);
     onMuscleSelect?.(id);
@@ -168,9 +224,10 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.canvasWrapper}>
-        <GLBErrorBoundary>
-          <Canvas style={styles.canvas}>
+      <GestureDetector gesture={pinch}>
+        <View style={styles.canvasWrapper}>
+          <GLBErrorBoundary>
+            <Canvas style={styles.canvas}>
             {/*
               Camera fixed at a known distance on -Y looking at origin, with
               up=+Z so BodyParts3D's anatomical Z (superior axis) maps to
@@ -187,6 +244,7 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
               near={1}
               far={5000}
             />
+            <CameraDistanceController desiredDistanceRef={desiredDistanceRef} />
             <ambientLight intensity={0.55} />
             <directionalLight position={[100, 100, 100]} intensity={1.2} />
             <directionalLight
@@ -228,10 +286,11 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
               rotateSpeed={1.0}
               target={[0, 0, 0]}
             />
-          </Canvas>
-          {!ready && <LoadingIndicator />}
-        </GLBErrorBoundary>
-      </View>
+            </Canvas>
+            {!ready && <LoadingIndicator />}
+          </GLBErrorBoundary>
+        </View>
+      </GestureDetector>
 
       <View style={styles.footer}>
         {selectedMuscle ? (

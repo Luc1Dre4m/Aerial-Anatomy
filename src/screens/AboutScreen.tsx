@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -45,16 +45,46 @@ export function AboutScreen() {
           <Text style={styles.disclaimerText}>{t('about.disclaimerText')}</Text>
         </View>
 
-        {/* Anatomy images attribution — CC BY-SA 3.0 */}
+        {/* Anatomical 3D assets attribution (CC BY-SA 2.1 JP requires this) */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('about.anatomyImages')}</Text>
-          <Text style={styles.creditLine}>{t('about.anatomyAttribution')}</Text>
-          <TouchableOpacity
-            onPress={() => Linking.openURL(t('about.anatomyLicenseUrl'))}
-            accessibilityRole="link"
-          >
-            <Text style={styles.licenseLink}>{t('about.anatomyLicense')}</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Recursos anatómicos 3D</Text>
+          <Text style={styles.attribLine}>
+            Modelos anatómicos derivados de{' '}
+            <Text
+              style={styles.link}
+              onPress={() =>
+                Linking.openURL('https://lifesciencedb.jp/bp3d/')
+              }
+            >
+              BodyParts3D
+            </Text>
+            {' '}— DBCLS (Database Center for Life Science).
+          </Text>
+          <Text style={styles.attribLine}>
+            Licencia:{' '}
+            <Text
+              style={styles.link}
+              onPress={() =>
+                Linking.openURL(
+                  'https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en'
+                )
+              }
+            >
+              Creative Commons Attribution-Share Alike 2.1 Japan
+            </Text>
+            .
+          </Text>
+          <Text style={styles.attribLine}>
+            Modificaciones aplicadas: conversión de STL a glTF, agrupación de
+            partes lateralizadas (right + left) y subdivisiones (clavicular,
+            sternocostal, abdominal, etc.) en un solo asset por músculo, y
+            asignación de materiales por instancia para destacado interactivo.
+          </Text>
+          <Text style={styles.attribLine}>
+            Cita académica: Mitsuhashi N et al. (2009). BodyParts3D: 3D
+            structure database for anatomical concepts. Nucleic Acids Res.
+            37(Database):D782-5.
+          </Text>
         </View>
 
         {/* Credits */}
@@ -64,6 +94,7 @@ export function AboutScreen() {
           <Text style={styles.creditLine}>React Navigation</Text>
           <Text style={styles.creditLine}>react-native-svg</Text>
           <Text style={styles.creditLine}>react-native-reanimated</Text>
+          <Text style={styles.creditLine}>three.js + @react-three/fiber + drei</Text>
           <Text style={styles.creditLine}>Playfair Display (Google Fonts)</Text>
         </View>
       </ScrollView>
@@ -150,10 +181,13 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.muted,
   },
-  licenseLink: {
+  attribLine: {
     ...typography.body.small,
+    color: colors.text.secondary,
+    lineHeight: 18,
+  },
+  link: {
     color: colors.accent.primary,
-    textDecorationLine: 'underline' as const,
-    marginTop: 4,
+    textDecorationLine: 'underline',
   },
 });
