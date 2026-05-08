@@ -142,6 +142,9 @@ export function CuerpoScreen() {
                 setSelectedRegion(null);
                 setTooltipMuscleId(muscleId);
               }}
+              onViewDetail={(muscleId) => {
+                navigation.navigate('MuscleDetail', { muscleId });
+              }}
             />
           </ErrorBoundary>
         ) : (

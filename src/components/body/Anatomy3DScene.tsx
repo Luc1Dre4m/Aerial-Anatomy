@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Canvas, ThreeEvent, useFrame } from '@react-three/fiber/native';
 import { useGLTF, OrbitControls, PerspectiveCamera } from '@react-three/drei/native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -16,6 +16,7 @@ import { colors, spacing, typography } from '../../theme';
 interface Anatomy3DSceneProps {
   highlightedMuscles?: string[];
   onMuscleSelect?: (muscleId: string) => void;
+  onViewDetail?: (muscleId: string) => void;
 }
 
 const HIGHLIGHT_COLOR = new THREE.Color(0xd4a843); // theme accent gold
@@ -179,7 +180,7 @@ function CenteredBody({ children, recenterKey }: { children: React.ReactNode; re
 }
 
 
-export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
+export function Anatomy3DScene({ onMuscleSelect, onViewDetail }: Anatomy3DSceneProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   // Bumped each time we want CenteredBody to recompute its centering offset
@@ -294,26 +295,38 @@ export function Anatomy3DScene({ onMuscleSelect }: Anatomy3DSceneProps) {
 
       <View style={styles.footer}>
         {selectedMuscle ? (
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.footerName}>{selectedMuscle.name_es}</Text>
-            <Text style={styles.footerLatin}>{selectedMuscle.name_latin}</Text>
-            <Text style={styles.footerSection}>Función</Text>
-            <Text style={styles.footerBody}>{selectedMuscle.primary_function_es}</Text>
-            <Text style={styles.footerSection}>Descripción</Text>
-            <Text style={styles.footerBody}>{selectedMuscle.description_es}</Text>
-            <Text style={styles.footerSection}>Origen → Inserción</Text>
-            <Text style={styles.footerBody}>
-              {selectedMuscle.origin_es}
-              {'\n→ '}
-              {selectedMuscle.insertion_es}
-            </Text>
-            {selectedMuscle.innervation && (
-              <>
-                <Text style={styles.footerSection}>Inervación</Text>
-                <Text style={styles.footerBody}>{selectedMuscle.innervation}</Text>
-              </>
+          <>
+            <ScrollView style={styles.footerScroll} showsVerticalScrollIndicator={false}>
+              <Text style={styles.footerName}>{selectedMuscle.name_es}</Text>
+              <Text style={styles.footerLatin}>{selectedMuscle.name_latin}</Text>
+              <Text style={styles.footerSection}>Función</Text>
+              <Text style={styles.footerBody}>{selectedMuscle.primary_function_es}</Text>
+              <Text style={styles.footerSection}>Descripción</Text>
+              <Text style={styles.footerBody}>{selectedMuscle.description_es}</Text>
+              <Text style={styles.footerSection}>Origen → Inserción</Text>
+              <Text style={styles.footerBody}>
+                {selectedMuscle.origin_es}
+                {'\n→ '}
+                {selectedMuscle.insertion_es}
+              </Text>
+              {selectedMuscle.innervation && (
+                <>
+                  <Text style={styles.footerSection}>Inervación</Text>
+                  <Text style={styles.footerBody}>{selectedMuscle.innervation}</Text>
+                </>
+              )}
+            </ScrollView>
+            {onViewDetail && (
+              <Pressable
+                style={styles.detailButton}
+                onPress={() => onViewDetail(selectedMuscle.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Ver detalle completo de ${selectedMuscle.name_es}`}
+              >
+                <Text style={styles.detailButtonText}>Ver detalle completo →</Text>
+              </Pressable>
             )}
-          </ScrollView>
+          </>
         ) : (
           <Text style={styles.footerHint}>Toca un músculo para seleccionarlo</Text>
         )}
@@ -353,7 +366,23 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     minHeight: 56,
-    maxHeight: 280,
+    maxHeight: 320,
+  },
+  footerScroll: {
+    flexShrink: 1,
+  },
+  detailButton: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+    backgroundColor: colors.accent.primary,
+    alignItems: 'center',
+  },
+  detailButtonText: {
+    ...typography.body.regular,
+    color: colors.bg.primary,
+    fontWeight: '600',
   },
   footerName: {
     ...typography.heading.h3,
