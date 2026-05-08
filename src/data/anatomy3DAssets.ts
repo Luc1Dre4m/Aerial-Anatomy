@@ -28,22 +28,36 @@ const M_RECTO_ABDOMINAL = require('../../assets/3d-models/m_recto_abdominal.glb'
 const M_GLUTEO_MAYOR = require('../../assets/3d-models/m_gluteo_mayor.glb');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const M_CUADRICEPS = require('../../assets/3d-models/m_cuadriceps.glb');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const M_MANGUITO_ROTADOR = require('../../assets/3d-models/m_manguito_rotador.glb');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const M_ILIOPSOAS = require('../../assets/3d-models/m_iliopsoas.glb');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const M_SOLEO = require('../../assets/3d-models/m_soleo.glb');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const M_DIAFRAGMA = require('../../assets/3d-models/m_diafragma.glb');
 
-// 6 muscles enabled (~72 MB raw). Heavier ones (dorsal 32 MB, recto 27 MB,
-// cuadriceps 43 MB, oblicuo externo 78 MB) are pending decimation — including
-// them all together makes rotation lag noticeably on mid-tier devices.
+// 10 muscles enabled (~135 MB raw). Heavier ones (dorsal 32 MB, recto 27 MB,
+// cuadriceps 43 MB, oblicuo externo 78 MB, transverso 45 MB, oblicuo interno
+// 38 MB, serrato 35 MB, isquiotibiales 31 MB, flexores dedos 30 MB,
+// flexores antebrazo 24 MB) are pending decimation — including them on top
+// of the current registry pushes the GPU past smooth rotation on mid-tier
+// devices. Curated FMA mapping for all 35 lives in
+// tools/anatomy-models-curated.json.
 export const ANATOMY_3D_MODELS: Record<string, number> = {
-  m_pectoral_mayor: M_PECTORAL_MAYOR,  // 7.6 MB
-  m_deltoides: M_DELTOIDES,            // 14.8 MB
-  m_trapecio: M_TRAPECIO,              // 20.9 MB
-  m_biceps: M_BICEPS,                  // 8.8 MB
-  m_triceps: M_TRICEPS,                // 14.6 MB
-  m_gluteo_mayor: M_GLUTEO_MAYOR,      // 4.8 MB
-  // Pending decimation (raw too heavy for smooth rotation):
-  // m_dorsal_ancho: M_DORSAL_ANCHO,      // 32 MB
-  // m_recto_abdominal: M_RECTO_ABDOMINAL, // 27 MB
-  // m_cuadriceps: M_CUADRICEPS,           // 43 MB
-  // m_oblicuo_externo: M_OBLICUO_EXTERNO, // 78 MB
+  // Hombro / brazo
+  m_pectoral_mayor: M_PECTORAL_MAYOR,         // 7.6 MB
+  m_deltoides: M_DELTOIDES,                   // 14.8 MB
+  m_trapecio: M_TRAPECIO,                     // 20.9 MB
+  m_manguito_rotador: M_MANGUITO_ROTADOR,     // 13.3 MB — crítico aerial
+  m_biceps: M_BICEPS,                         // 8.8 MB
+  m_triceps: M_TRICEPS,                       // 14.6 MB
+  // Core
+  m_diafragma: M_DIAFRAGMA,                   // 15.2 MB — respiración aerial
+  // Cadera / pierna
+  m_iliopsoas: M_ILIOPSOAS,                   // 14.5 MB — flexión cadera
+  m_gluteo_mayor: M_GLUTEO_MAYOR,             // 4.8 MB
+  m_soleo: M_SOLEO,                           // 10 MB — tobillos aerial
 };
 
 export const ANATOMY_3D_AVAILABLE_IDS: readonly string[] = Object.keys(ANATOMY_3D_MODELS);
