@@ -121,6 +121,18 @@ export default {
     premiumOnly3D: 'El visor 3D es una funcion Premium',
     region: 'Region',
   },
+  tutorial3D: {
+    stepCounter: 'Paso {{current}} de {{total}}',
+    skip: 'Saltar',
+    next: 'Siguiente',
+    done: 'Entendido',
+    step1Title: 'Rotá el cuerpo',
+    step1Body: 'Arrastrá con un dedo sobre el cuerpo para girarlo y verlo desde cualquier ángulo.',
+    step2Title: 'Tappea un músculo',
+    step2Body: 'Tocá cualquier músculo para verlo en detalle. La cámara se centra suavemente sobre la zona seleccionada.',
+    step3Title: 'Acercá o alejá',
+    step3Body: 'Usá los botones + y − en la esquina inferior derecha para hacer zoom dentro y fuera.',
+  },
   movements: {
     search: 'Buscar movimiento...',
     allDisciplines: 'Todas',
@@ -381,7 +393,7 @@ export default {
     noResults: 'Sin resultados',
   },
   author: {
-    credit: 'Rubi Lueiza Fuentes',
+    credit: 'Rubí Lueiza Fuentes',
   },
   features: {
     anatomy3DTitle: 'Visor 3D Anatómico',

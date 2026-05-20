@@ -121,6 +121,18 @@ export default {
     premiumOnly3D: '3D viewer is a Premium feature',
     region: 'Region',
   },
+  tutorial3D: {
+    stepCounter: 'Step {{current}} of {{total}}',
+    skip: 'Skip',
+    next: 'Next',
+    done: 'Got it',
+    step1Title: 'Rotate the body',
+    step1Body: 'Drag with one finger over the body to spin it and view it from any angle.',
+    step2Title: 'Tap a muscle',
+    step2Body: 'Tap any muscle to see it in detail. The camera smoothly centers on the selected area.',
+    step3Title: 'Zoom in and out',
+    step3Body: 'Use the + and − buttons in the lower right corner to zoom in and out.',
+  },
   movements: {
     search: 'Search movement...',
     allDisciplines: 'All',
@@ -381,7 +393,7 @@ export default {
     noResults: 'No results',
   },
   author: {
-    credit: 'Rubi Lueiza Fuentes',
+    credit: 'Rubí Lueiza Fuentes',
   },
   features: {
     anatomy3DTitle: '3D Anatomy Viewer',

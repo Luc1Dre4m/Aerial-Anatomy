@@ -6,18 +6,24 @@ import { colors } from '../../theme';
 
 interface Anatomy3DViewerProps {
   highlightedMuscles?: string[];
+  // Selected muscle id is now controlled from CuerpoScreen so the info card
+  // can be rendered in the secondary slot (replacing MuscleOfTheDay) instead
+  // of as an overlay on top of the canvas.
+  selectedMuscleId?: string | null;
   onMuscleSelect?: (muscleId: string) => void;
-  onViewDetail?: (muscleId: string) => void;
 }
 
 export const Anatomy3DViewer = React.memo(function Anatomy3DViewer({
+  selectedMuscleId,
   onMuscleSelect,
-  onViewDetail,
 }: Anatomy3DViewerProps) {
   return (
     <View style={styles.container}>
       <ErrorBoundary>
-        <Anatomy3DScene onMuscleSelect={onMuscleSelect} onViewDetail={onViewDetail} />
+        <Anatomy3DScene
+          selectedMuscleId={selectedMuscleId}
+          onMuscleSelect={onMuscleSelect}
+        />
       </ErrorBoundary>
     </View>
   );
