@@ -15,9 +15,14 @@ import { AnimatedSplashScreen } from './src/screens/AnimatedSplashScreen';
 import { useAppStore } from './src/store/useAppStore';
 import { initRevenueCat, getCurrentTier, onSubscriptionChange } from './src/services/revenueCat';
 import { getSession, onAuthStateChange } from './src/services/supabase';
+import { initCrashReporter, setUser as setCrashUser } from './src/services/crashReporter';
 import { ErrorBoundary } from './src/components/ui/ErrorBoundary';
 import { colors } from './src/theme';
 import './src/i18n';
+
+// Boot temprano del crash reporter (antes de cualquier work async). Idempotente.
+// Sin DSN configurada: usa console-only mode. Con DSN + SDK: reporta a backend.
+initCrashReporter();
 
 if (__DEV__) {
   const { validateAllData } = require('./src/utils/validateData');
@@ -106,9 +111,11 @@ export default function App() {
       if (userId) {
         setUserId(userId);
         setIsAuthenticated(true);
+        setCrashUser({ id: userId });
       } else {
         setUserId(null);
         setIsAuthenticated(false);
+        setCrashUser(null);
       }
     });
 

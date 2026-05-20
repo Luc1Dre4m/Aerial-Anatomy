@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import i18n from '../../i18n';
+import { captureException } from '../../services/crashReporter';
 import { colors, typography, spacing } from '../../theme';
 
 interface Props {
@@ -23,7 +24,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    if (__DEV__) console.error('[ErrorBoundary]', error, errorInfo);
+    // Reportar al crash reporter centralizado. En dev hace console.error,
+    // en prod con Sentry wired va al dashboard remoto.
+    captureException(error, {
+      tags: { source: 'ErrorBoundary' },
+      extra: { componentStack: errorInfo.componentStack },
+      level: 'error',
+    });
   }
 
   handleReset = () => {
