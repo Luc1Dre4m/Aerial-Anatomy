@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback, Suspense } from 'react';
-import { View, Text, TouchableOpacity, Pressable, Animated, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,94 +7,53 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LanguageToggle, AuthorCredit, GlobalSearch, StreakBadge } from '../components/ui';
 import { MuscleOfTheDay } from '../components/ui/MuscleOfTheDay';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { BodyMap } from '../components/body/BodyMap';
-import { ZoomableBody } from '../components/body/ZoomableBody';
-import { MuscleTooltip } from '../components/body/MuscleTooltip';
 import { Anatomy3DViewer } from '../components/body/Anatomy3DViewer';
-import { ViewModeToggle } from '../components/body/ViewModeToggle';
-
-const Anatomy3DViewer = React.lazy(() =>
-  import('../components/body/Anatomy3DViewer').then((m) => ({ default: m.Anatomy3DViewer })),
-);
-import { getMusclesByRegion, REGION_LABELS } from '../data/muscles';
-import { MuscleRegion } from '../utils/types';
+import { MuscleInfoCard } from '../components/body/MuscleInfoCard';
+import { Anatomy3DTutorial } from '../components/body/Anatomy3DTutorial';
 import { AnimatedTitle } from '../components/ui/AnimatedTitle';
-import { useProgress } from '../hooks/useProgress';
 import { useAppStore } from '../store/useAppStore';
-import { getMuscleById } from '../data/muscles';
 import { colors, typography, spacing } from '../theme';
 
 export function CuerpoScreen() {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.language as 'es' | 'en';
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
-  const [bodyView, setBodyView] = useState<'front' | 'back'>('front');
-  const [selectedRegion, setSelectedRegion] = useState<MuscleRegion | null>(null);
-  const [tooltipMuscleId, setTooltipMuscleId] = useState<string | null>(null);
+  const [selectedMuscleId, setSelectedMuscleId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
-  const lastPressTime = useRef(0);
+  // Tutorial overlay 3D — Sprint A2 #4 (junta directiva 2026-05-15, Tomás).
+  // El flag vive en el store persistido; una vez marcado, no vuelve a aparecer.
+  // Sólo mostrar cuando onboarding ya terminó (evita stack de overlays al
+  // primer arranque) y no hay GlobalSearch abierto.
+  const tutorial3DComplete = useAppStore((s) => s.tutorial3DComplete);
+  const onboardingComplete = useAppStore((s) => s.onboardingComplete);
+  const completeTutorial3D = useAppStore((s) => s.completeTutorial3D);
+  const showTutorial =
+    onboardingComplete && !tutorial3DComplete && !showSearch;
+  // We keep the LAST muscle id in a ref so the MuscleInfoCard component
+  // stays mounted (with the previous content) even when the user closes
+  // the panel. The card is just hidden via opacity, so the next pick is a
+  // cheap prop-update + visibility flip instead of a full mount + layout.
+  const lastSelectedRef = useRef<string | null>(null);
+  if (selectedMuscleId !== null) {
+    lastSelectedRef.current = selectedMuscleId;
+  }
+  const cardMuscleId = lastSelectedRef.current;
 
-  // 3D flip animation
-  const flipAnim = useRef(new Animated.Value(0)).current; // 0 = front, 1 = back
-  const isFlipping = useRef(false);
-  const bodyViewRef = useRef<'front' | 'back'>('front');
+  // Stable callback so the memoized Anatomy3DViewer doesn't see a new identity
+  // on every render — important to avoid Canvas/MuscleGroups re-mounts.
+  const handleMuscle3DSelect = useCallback((muscleId: string) => {
+    setSelectedMuscleId(muscleId);
+  }, []);
 
-  const flipTo = useCallback((target: 'front' | 'back') => {
-    if (isFlipping.current || bodyViewRef.current === target) return;
-    isFlipping.current = true;
-    const toValue = target === 'back' ? 1 : 0;
+  const handleCloseInfo = useCallback(() => {
+    setSelectedMuscleId(null);
+  }, []);
 
-    // Phase 1: rotate to 90deg (edge-on)
-    Animated.timing(flipAnim, {
-      toValue: bodyViewRef.current === 'front' ? 0.5 : 0.5,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      // Swap the view at the midpoint
-      setBodyView(target);
-      bodyViewRef.current = target;
-      setSelectedRegion(null);
-      setTooltipMuscleId(null);
-
-      // Phase 2: rotate from 90deg to final
-      flipAnim.setValue(0.5);
-      Animated.timing(flipAnim, {
-        toValue,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        isFlipping.current = false;
-      });
-    });
-  }, [flipAnim]);
-
-  const handleFling = useCallback(() => {
-    const target = bodyViewRef.current === 'front' ? 'back' : 'front';
-    flipTo(target);
-  }, [flipTo]);
-
-  // Interpolate flip animation for 3D rotation effect
-  const frontRotateY = flipAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: ['0deg', '90deg', '180deg'],
-  });
-  const frontOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.49, 0.5, 1],
-    outputRange: [1, 1, 0, 0],
-  });
-  const backRotateY = flipAnim.interpolate({
-    inputRange: [0, 0.5, 0.51, 1],
-    outputRange: ['180deg', '90deg', '90deg', '0deg'],
-  });
-  const backOpacity = flipAnim.interpolate({
-    inputRange: [0, 0.5, 0.51, 1],
-    outputRange: [0, 0, 1, 1],
-  });
-
-  const regionMuscles = selectedRegion ? getMusclesByRegion(selectedRegion) : [];
-  const { totalVisited, totalMuscles, overallRatio } = useProgress();
-  const recentMuscles = useAppStore((s) => s.recentMuscles);
+  const handleViewDetail = useCallback(
+    (muscleId: string) => {
+      navigation.navigate('MuscleDetail', { muscleId });
+    },
+    [navigation]
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -126,140 +85,37 @@ export function CuerpoScreen() {
         <AnimatedTitle text={t('screens.cuerpo.title')} style={styles.title} />
       </View>
 
-      <ViewModeToggle
-        viewMode={viewMode}
-        onChangeMode={setViewMode}
-        bodyView={bodyView}
-        onChangeBodyView={(target) => flipTo(target)}
-      />
-
       <View style={styles.bodyContainer}>
-        {viewMode === '3d' ? (
-          <ErrorBoundary>
-            <Anatomy3DViewer
-              highlightedMuscles={tooltipMuscleId ? [tooltipMuscleId] : []}
-              onMuscleSelect={(muscleId) => {
-                setSelectedRegion(null);
-                setTooltipMuscleId(muscleId);
-              }}
-              onViewDetail={(muscleId) => {
-                navigation.navigate('MuscleDetail', { muscleId });
-              }}
-            />
-          </ErrorBoundary>
-        ) : (
-          <>
-            {/* Front face */}
-            <Animated.View style={[
-              styles.bodyFace,
-              { opacity: frontOpacity, transform: [{ perspective: 800 }, { rotateY: frontRotateY }] },
-            ]}>
-              <ZoomableBody onFlingHorizontal={handleFling}>
-                <BodyMap
-                  view="front"
-                  highlightedRegion={bodyView === 'front' ? selectedRegion : null}
-                  selectedMuscleId={bodyView === 'front' ? tooltipMuscleId : null}
-                  onRegionPress={(region) => {
-                    if (bodyView !== 'front') return;
-                    setTooltipMuscleId(null);
-                    setSelectedRegion(region === selectedRegion ? null : region);
-                  }}
-                  onMusclePress={(muscleId) => {
-                    if (bodyView !== 'front') return;
-                    const now = Date.now();
-                    if (now - lastPressTime.current < 300) return;
-                    lastPressTime.current = now;
-                    setSelectedRegion(null);
-                    setTooltipMuscleId(muscleId);
-                  }}
-                />
-              </ZoomableBody>
-            </Animated.View>
-
-            {/* Back face */}
-            <Animated.View style={[
-              styles.bodyFace,
-              { opacity: backOpacity, transform: [{ perspective: 800 }, { rotateY: backRotateY }] },
-            ]}>
-              <ZoomableBody onFlingHorizontal={handleFling}>
-                <BodyMap
-                  view="back"
-                  highlightedRegion={bodyView === 'back' ? selectedRegion : null}
-                  selectedMuscleId={bodyView === 'back' ? tooltipMuscleId : null}
-                  onRegionPress={(region) => {
-                    if (bodyView !== 'back') return;
-                    setTooltipMuscleId(null);
-                    setSelectedRegion(region === selectedRegion ? null : region);
-                  }}
-                  onMusclePress={(muscleId) => {
-                    if (bodyView !== 'back') return;
-                    const now = Date.now();
-                    if (now - lastPressTime.current < 300) return;
-                    lastPressTime.current = now;
-                    setSelectedRegion(null);
-                    setTooltipMuscleId(muscleId);
-                  }}
-                />
-              </ZoomableBody>
-            </Animated.View>
-
-            <View style={styles.swipeHint}>
-              <MaterialCommunityIcons name="gesture-swipe-horizontal" size={16} color={colors.text.muted} />
-              <Text style={styles.swipeHintText}>
-                {t('body.swipeToRotate')}
-              </Text>
-            </View>
-          </>
-        )}
+        <ErrorBoundary>
+          <Anatomy3DViewer
+            highlightedMuscles={selectedMuscleId ? [selectedMuscleId] : []}
+            selectedMuscleId={selectedMuscleId}
+            onMuscleSelect={handleMuscle3DSelect}
+          />
+        </ErrorBoundary>
       </View>
 
-      {tooltipMuscleId && viewMode === '2d' && (
-        <>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setTooltipMuscleId(null)}
-          />
-          <MuscleTooltip
-            muscleId={tooltipMuscleId}
-            onViewDetail={(id) => {
-              setTooltipMuscleId(null);
-              navigation.navigate('MuscleDetail', { muscleId: id });
-            }}
-            onClose={() => setTooltipMuscleId(null)}
-          />
-        </>
-      )}
-
-      {selectedRegion ? (
-        <View style={styles.regionPanel}>
-          <Text style={styles.regionTitle}>{REGION_LABELS[selectedRegion][lang]}</Text>
-          <Text style={styles.regionCount}>
-            {t('muscles.count', { count: regionMuscles.length })}
-          </Text>
-          <ScrollView style={styles.muscleList} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-            {regionMuscles.map((m) => (
-              <TouchableOpacity
-                key={m.id}
-                style={styles.muscleItem}
-                onPress={() => navigation.navigate('MuscleDetail', { muscleId: m.id })}
-              >
-                <Text style={styles.muscleName}>
-                  {lang === 'es' ? m.name_es : m.name_en}
-                </Text>
-                <Text style={styles.muscleLatin}>{m.name_latin}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      ) : viewMode === '3d' && tooltipMuscleId ? (
-        // In 3D mode the scene's own footer already shows the selected muscle —
-        // hide the "Músculo del día" card so it doesn't compete for attention.
-        null
-      ) : (
-        <View style={styles.hint}>
-          <Text style={styles.hintText}>{t('body.tapToExplore')}</Text>
-          <View style={styles.motdContainer}>
-            <MuscleOfTheDay onPress={(id) => navigation.navigate('MuscleDetail', { muscleId: id })} />
+      {/*
+        Fixed-height slot. Holds either MuscleInfoCard (when something is
+        selected) or MuscleOfTheDay (default). Height is fixed so the
+        bodyContainer above does NOT resize when the user selects/deselects
+        — that resize was making the Canvas blank out (R3F + expo-gl can't
+        seem to recover from a runtime resize cleanly).
+      */}
+      <View style={styles.secondarySlot}>
+        {/*
+          Both MOTD and MuscleInfoCard live here as overlapping absolute
+          children, with the inactive one hidden via opacity 0 + pointer-
+          events 'none'. That keeps both mounted across selection toggles —
+          the first pick still pays the mount cost, but every subsequent
+          pick is just a prop change + opacity flip, which feels instant.
+        */}
+        <View
+          style={[styles.slotChild, selectedMuscleId !== null && styles.hidden]}
+          pointerEvents={selectedMuscleId !== null ? 'none' : 'auto'}
+        >
+          <View style={styles.motdWrapper}>
+            <MuscleOfTheDay onPress={handleViewDetail} />
           </View>
           {totalVisited > 0 && (
             <View style={styles.progressContainer}>
@@ -294,7 +150,19 @@ export function CuerpoScreen() {
             </View>
           )}
         </View>
-      )}
+        {cardMuscleId !== null && (
+          <View
+            style={[styles.slotChild, selectedMuscleId === null && styles.hidden]}
+            pointerEvents={selectedMuscleId === null ? 'none' : 'auto'}
+          >
+            <MuscleInfoCard
+              muscleId={cardMuscleId}
+              onClose={handleCloseInfo}
+              onViewDetail={handleViewDetail}
+            />
+          </View>
+        )}
+      </View>
 
       <AuthorCredit />
 
@@ -311,6 +179,8 @@ export function CuerpoScreen() {
           onClose={() => setShowSearch(false)}
         />
       )}
+
+      {showTutorial && <Anatomy3DTutorial onFinish={completeTutorial3D} />}
     </SafeAreaView>
   );
 }
@@ -352,79 +222,31 @@ const styles = StyleSheet.create({
   },
   bodyContainer: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
   },
-  bodyFace: {
+  // Fixed height keeps the bodyContainer's vertical extent stable when the
+  // contents of this slot switch between MOTD card and the muscle info card.
+  // 220 DIPs leaves more room for the canvas above; the InfoCard's ScrollView
+  // makes long content reachable even at this height. Padding is on
+  // `slotChild` instead of here so absolute children share the same offsets.
+  secondarySlot: {
+    height: 220,
+    position: 'relative',
+  },
+  motdWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  // Both MOTD and InfoCard are absolute-positioned siblings within the slot
+  // so they overlap without affecting each other's layout. Only one is
+  // visible at a time via `hidden`.
+  slotChild: {
     ...StyleSheet.absoluteFillObject,
-    backfaceVisibility: 'hidden',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
-  swipeHint: {
-    position: 'absolute',
-    bottom: 4,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    opacity: 0.5,
-  },
-  swipeHintText: {
-    fontSize: 11,
-    color: colors.text.muted,
-  },
-  regionPanel: {
-    backgroundColor: colors.bg.secondary,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: spacing.xl,
-    gap: spacing.sm,
-    maxHeight: 200,
-  },
-  regionTitle: {
-    ...typography.heading.h3,
-    fontFamily: typography.heading.fontFamily,
-    color: colors.accent.light,
-  },
-  regionCount: {
-    ...typography.body.small,
-    color: colors.text.muted,
-  },
-  muscleList: {
-    maxHeight: 200,
-    gap: spacing.sm,
-  },
-  muscleItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: 8,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: 44,
-  },
-  muscleName: {
-    ...typography.body.regular,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-  muscleLatin: {
-    ...typography.body.small,
-    color: colors.accent.muted,
-    fontStyle: 'italic',
-  },
-  hint: {
-    padding: spacing.xl,
-    alignItems: 'center',
-  },
-  hintText: {
-    ...typography.body.regular,
-    color: colors.text.muted,
-    textAlign: 'center',
-  },
-  motdContainer: {
-    width: '100%',
-    marginTop: spacing.md,
+  hidden: {
+    opacity: 0,
   },
   progressContainer: {
     width: '100%',
