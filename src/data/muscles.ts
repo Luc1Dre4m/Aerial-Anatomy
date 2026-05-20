@@ -781,10 +781,6 @@ export function getMuscleById(id: string): Muscle | undefined {
   return muscles.find((m) => m.id === id);
 }
 
-export function getMusclesByRegion(region: Muscle['region']): Muscle[] {
-  return muscles.filter((m) => m.region === region);
-}
-
 export const REGION_LABELS: Record<Muscle['region'], { es: string; en: string }> = {
   hombros: { es: 'Hombros', en: 'Shoulders' },
   espalda: { es: 'Espalda', en: 'Back' },
