@@ -102,18 +102,13 @@ async function buildMuscle(muscleId, def) {
   }
 
   const colorInt = Number(def.color);
-  const material = new THREE.MeshStandardMaterial({
-    color: colorInt,
-    roughness: 0.55,
-    metalness: 0.05,
-  });
-
-  const stlPaths = [];
+  // Download all FMA parts first.
+  const stlEntries = [];
   for (const fma of def.fma) {
     process.stdout.write(`  ${fma}…`);
     try {
       const stlPath = await downloadSTL(fma);
-      stlPaths.push(stlPath);
+      stlEntries.push({ fma, stlPath });
       process.stdout.write(` ✓\n`);
     } catch (err) {
       process.stdout.write(` ✖ ${err.message}\n`);
@@ -123,11 +118,24 @@ async function buildMuscle(muscleId, def) {
 
   const scene = new THREE.Scene();
   // userData.muscleId on the parent group lets the runtime picker map back
-  // to a known muscle even when the GLB merges multiple sub-parts.
+  // to a known muscle even when there are multiple sub-meshes.
   scene.userData.muscleId = muscleId;
   let totalVerts = 0;
-  for (const stlPath of stlPaths) {
-    const mesh = loadSTLAsMesh(stlPath, material);
+  // CRITICAL: a FRESH material instance with a UNIQUE name per sub-mesh
+  // (one per FMA code). gltfpack's decimation pass merges meshes that
+  // share a material; by giving each sub-mesh its own named material, we
+  // tell gltfpack (via the `-km` flag) to keep them separate. At runtime
+  // the picker uses AABB raycast per mesh — multiple sub-meshes → multiple
+  // tight bboxes per muscle → much better pick precision.
+  for (const { fma, stlPath } of stlEntries) {
+    const subMaterial = new THREE.MeshStandardMaterial({
+      color: colorInt,
+      roughness: 0.55,
+      metalness: 0.05,
+    });
+    subMaterial.name = `${muscleId}__${fma}`;
+    const mesh = loadSTLAsMesh(stlPath, subMaterial);
+    mesh.name = `${muscleId}__${fma}`;
     mesh.userData.muscleId = muscleId;
     scene.add(mesh);
     totalVerts += mesh.geometry.attributes.position.count;
@@ -142,7 +150,7 @@ async function buildMuscle(muscleId, def) {
 
   const buf = await exportGLB(scene);
   fs.writeFileSync(outputPath, buf);
-  console.log(`OK ${muscleId} → ${path.basename(outputPath)} ${buf.length}B (${stlPaths.length} parts, ${totalVerts} verts)`);
+  console.log(`OK ${muscleId} → ${path.basename(outputPath)} ${buf.length}B (${stlEntries.length} parts, ${totalVerts} verts)`);
 }
 
 async function main() {
