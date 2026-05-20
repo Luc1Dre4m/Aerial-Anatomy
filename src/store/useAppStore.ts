@@ -7,6 +7,20 @@ import { MotionSession } from '../services/motionAnalysis';
 
 const DEV_PREMIUM = process.env.EXPO_PUBLIC_DEV_PREMIUM === 'true';
 
+// Safeguard de release (junta directiva 2026-05-15, Mauricio): el flag de
+// unlock premium en dev es útil para QA local, pero shippearlo activo en
+// una build de producción daría premium gratis a todos los usuarios. Esta
+// guarda crashea la app temprano y con un mensaje claro si alguien arma
+// una build no-dev con el flag puesto — imposible no notarlo antes del
+// release.
+if (DEV_PREMIUM && !__DEV__) {
+  throw new Error(
+    'EXPO_PUBLIC_DEV_PREMIUM=true detectado en una build NO-dev. ' +
+    'Este flag salta el paywall y NUNCA debe shipearse a producción. ' +
+    'Quitá el env var o ponelo en "false" antes de hacer eas build.'
+  );
+}
+
 interface AppState {
   language: 'es' | 'en';
   setLanguage: (lang: 'es' | 'en') => void;
@@ -16,6 +30,8 @@ interface AppState {
   setSelectedMovementId: (id: string | null) => void;
   onboardingComplete: boolean;
   completeOnboarding: () => void;
+  tutorial3DComplete: boolean;
+  completeTutorial3D: () => void;
   userId: string | null;
   setUserId: (id: string | null) => void;
   isAuthenticated: boolean;
@@ -69,6 +85,8 @@ export const useAppStore = create<AppState>()(
       setSelectedMovementId: (id) => set({ selectedMovementId: id }),
       onboardingComplete: false,
       completeOnboarding: () => set({ onboardingComplete: true }),
+      tutorial3DComplete: false,
+      completeTutorial3D: () => set({ tutorial3DComplete: true }),
       userId: null,
       setUserId: (id) => set({ userId: id }),
       isAuthenticated: false,
@@ -145,6 +163,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         language: state.language,
         onboardingComplete: state.onboardingComplete,
+        tutorial3DComplete: state.tutorial3DComplete,
         userId: state.userId,
         isAuthenticated: state.isAuthenticated,
         userDisciplines: state.userDisciplines,
