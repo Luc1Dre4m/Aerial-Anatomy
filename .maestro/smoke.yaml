@@ -24,40 +24,41 @@ appId: com.aerialanatomyapp.aerialanatomia
 
 # 2. Skip onboarding si está visible
 #
-# OnboardingScreen tiene 3-4 slides. Si el flag onboardingComplete ya
-# está marcado (por una corrida previa) este bloque se salta solo
-# gracias al optional: true del runFlow.
+# OnboardingScreen expone testID 'OnboardingScreen' (root) y
+# 'OnboardingSkipBtn' (skip button). handleSkip llama
+# completeOnboarding() directo, evitando los 3 slides. Si la flag
+# onboardingComplete ya está marcada, el bloque entero se salta
+# gracias al when: visible.
 
 - runFlow:
     when:
-      visible: 'Bienvenida'
+      visible:
+        id: 'OnboardingScreen'
     commands:
-      - tapOn: 'Continuar'
-      - tapOn: 'Continuar'
-      - tapOn: 'Continuar'
       - tapOn:
-          text: '.*Empezar.*|.*Continuar.*'
+          id: 'OnboardingSkipBtn'
 
 # 3. CuerpoTab carga sin crash
 #
-# La tab se identifica por id estable (tabBarButtonTestID en
-# BottomTabNavigator.tsx) — locale-independent. El header 'Mapa Corporal'
-# sigue acoplado al idioma ES; ver "Adaptar a EN" en README.
+# Tab y header header con testIDs locale-independent.
 
 - assertVisible:
     id: 'CuerpoTab'
-- assertVisible: 'Mapa Corporal'
+- assertVisible:
+    id: 'CuerpoScreen:Header'
 
 # 4. Navegar a Músculos y entrar al detalle del primero
 #
-# Cards de músculo ahora exponen testID `MuscleCard:<id>`. Usamos
+# Cards de músculo exponen testID `MuscleCard:<id>`. Usamos
 # m_deltoides (siempre activo en el registro 3D y arriba de la lista).
+# El Origen section también tiene testID.
 
 - tapOn:
     id: 'MusculosTab'
 - tapOn:
     id: 'MuscleCard:m_deltoides'
-- assertVisible: 'Origen'
+- assertVisible:
+    id: 'MuscleDetailScreen:OriginSection'
 - back
 
 # 5. Navegar a Movimientos y entrar al detalle del primero
@@ -80,7 +81,8 @@ appId: com.aerialanatomyapp.aerialanatomia
 
 - tapOn:
     id: 'CuerpoTab'
-- assertVisible: 'Mapa Corporal'
+- assertVisible:
+    id: 'CuerpoScreen:Header'
 - assertNotVisible:
-    text: 'Paso 1 de'   # tutorial overlay step counter
+    text: 'Paso 1 de'   # tutorial overlay step counter — sin testID todavía
     optional: true
