@@ -9,9 +9,10 @@ import Animated, {
 interface AnimatedTitleProps {
   text: string;
   style?: StyleProp<TextStyle>;
+  testID?: string;
 }
 
-export function AnimatedTitle({ text, style }: AnimatedTitleProps) {
+export function AnimatedTitle({ text, style, testID }: AnimatedTitleProps) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(15);
 
@@ -26,7 +27,7 @@ export function AnimatedTitle({ text, style }: AnimatedTitleProps) {
   }));
 
   return (
-    <Animated.Text style={[style, animStyle]}>
+    <Animated.Text style={[style, animStyle]} testID={testID}>
       {text}
     </Animated.Text>
   );

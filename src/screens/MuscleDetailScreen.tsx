@@ -15,9 +15,9 @@ import { AnimatedTitle } from '../components/ui/AnimatedTitle';
 import { NotFoundView } from '../components/ui/NotFoundView';
 import { colors, typography, spacing } from '../theme';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, testID }: { title: string; children: React.ReactNode; testID?: string }) {
   return (
-    <View style={sectionStyles.container}>
+    <View style={sectionStyles.container} testID={testID}>
       <Text style={sectionStyles.title}>{title}</Text>
       {children}
     </View>
@@ -121,7 +121,7 @@ export function MuscleDetailScreen() {
           <Text style={styles.bodyText}>{primaryFunction}</Text>
         </Section>
 
-        <Section title={t('muscles.origin')}>
+        <Section title={t('muscles.origin')} testID="MuscleDetailScreen:OriginSection">
           <Text style={styles.bodyText}>{origin}</Text>
         </Section>
 

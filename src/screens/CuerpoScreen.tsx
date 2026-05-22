@@ -89,7 +89,7 @@ export function CuerpoScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <AnimatedTitle text={t('screens.cuerpo.title')} style={styles.title} />
+        <AnimatedTitle text={t('screens.cuerpo.title')} style={styles.title} testID="CuerpoScreen:Header" />
       </View>
 
       <View style={styles.bodyContainer}>
