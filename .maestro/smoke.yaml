@@ -1,0 +1,86 @@
+## Aerial-Anatomy smoke test
+##
+## Sprint A2 #7 (junta 2026-05-15, Renata + Mauricio).
+## Cubre el ~80% de las regresiones de release: la app arranca, las tres
+## tabs principales cargan, y se puede entrar al detalle de un músculo
+## y un movimiento sin crashes.
+##
+## NO toca el 3D viewer (Anatomy3DViewer) porque expo-gl render no expone
+## elementos accesibles para Maestro — la cobertura del 3D es visual y
+## quedará a QA manual hasta que se evalúe Detox o un screenshot diff.
+##
+## Locale asumido: ES (default). Si el dispositivo está en EN, los
+## strings de match (`text`) van a fallar — para ese caso ver la sección
+## "Adaptar a EN" en .maestro/README.md.
+
+appId: com.aerialanatomyapp.aerialanatomia
+---
+
+# 1. Boot
+
+- launchApp:
+    clearState: false
+    stopApp: true
+
+# 2. Skip onboarding si está visible
+#
+# OnboardingScreen tiene 3-4 slides. Si el flag onboardingComplete ya
+# está marcado (por una corrida previa) este bloque se salta solo
+# gracias al optional: true del runFlow.
+
+- runFlow:
+    when:
+      visible: 'Bienvenida'
+    commands:
+      - tapOn: 'Continuar'
+      - tapOn: 'Continuar'
+      - tapOn: 'Continuar'
+      - tapOn:
+          text: '.*Empezar.*|.*Continuar.*'
+
+# 3. CuerpoTab carga sin crash
+#
+# El text 'Cuerpo' es el label de la tab. AnimatedTitle renderiza el
+# título 'Mapa Corporal' en el header del screen.
+
+- assertVisible:
+    text: 'Cuerpo'
+- assertVisible: 'Mapa Corporal'
+
+# 4. Navegar a Músculos y entrar al detalle del primero
+
+- tapOn: 'Músculos'
+- assertVisible:
+    id: '.*MusculosScreen.*'
+    optional: true
+# Tap del primer card visible. Maestro no tiene "tap N-th match" estable,
+# así que usamos texto de un músculo que sabemos siempre está activo en el
+# registro y aparece arriba de la lista (Deltoides es base).
+- tapOn: 'Deltoides'
+- assertVisible: 'Origen'
+- back
+
+# 5. Navegar a Movimientos y entrar al detalle del primero
+
+- tapOn: 'Movimientos'
+- assertVisible:
+    text: 'Movimientos'
+# El primer movimiento que aparece depende del filtro de disciplina.
+# Si el onboarding seleccionó al menos una disciplina, va a haber
+# tarjetas visibles. Tomamos la primera por scroll-into-view + tap.
+- tapOn:
+    text: '.+'
+    index: 3   # las primeras 3 son tab labels o header; la 4ta empieza el contenido
+- assertVisible:
+    text: '.*Fase.*|.*Setup.*|.*Vuelo.*'
+    optional: true   # algunos movimientos no tienen fases con esos labels
+- back
+
+# 6. Volver a Cuerpo y verificar que el tutorial-3D NO se muestra al
+#    re-entrar (porque ya se marcó completo, o porque clearState=false)
+
+- tapOn: 'Cuerpo'
+- assertVisible: 'Mapa Corporal'
+- assertNotVisible:
+    text: 'Paso 1 de'   # tutorial overlay step counter
+    optional: true

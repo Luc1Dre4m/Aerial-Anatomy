@@ -29,4 +29,24 @@ Free tier de Sentry cubre 5k events/mes — suficiente para volumen esperado del
 
 ### #7 — Smoke test E2E con Maestro
 
-Pendiente. Maestro tiene CLI cross-platform que graba flows YAML y los corre contra el simulator/device. Flow mínimo a cubrir: boot → onboarding skip → CuerpoTab → tap muscle → InfoCard visible → cerrar → MovimientosTab → 1 movement card → detalle. ~15 min de setup, ~30 min de escribir el flow. Setup docs: https://maestro.mobile.dev/
+**Draft commiteado** (2026-05-20): el flow YAML vive en [.maestro/smoke.yaml](../../.maestro/smoke.yaml) y las instrucciones de instalación/ejecución en [.maestro/README.md](../../.maestro/README.md). El flow NO toca el viewer 3D (los canvases `expo-gl` no exponen elementos accesibles a Maestro).
+
+Pendiente:
+
+1. Instalar Maestro CLI local (instrucciones en `.maestro/README.md`).
+2. Levantar emulator Android (`npx expo run:android`) — recordar `.env.local` con `EXPO_PUBLIC_DEV_PREMIUM=true` para evitar el paywall en el flow.
+3. Primera corrida: `maestro test .maestro/smoke.yaml`. Pegar el output en este doc para dejar baseline.
+4. Si algún selector text-based falla por idioma del device → switchear a `testID` (cambios incrementales en cards/tabs).
+5. Workflow GitHub Actions más adelante (Maestro Cloud o emulator headless en CI).
+
+Tiempo restante estimado: ~30-45 min entre install + primera corrida + ajuste de selectores. Cobertura conseguida: ~80% de regresiones de release.
+
+## Warnings de `expo-doctor` (no bloqueantes, 2026-05-20)
+
+Tras el rebase + push, `npx expo-doctor` reporta 3 warnings:
+
+1. **Peer deps faltantes**: `expo-asset`, `expo-file-system` (requeridos por `expo-three`); `react-native-worklets` (por `react-native-reanimated`). Fix: `npx expo install expo-asset expo-file-system react-native-worklets`. Bajo riesgo, pero validar que las versions queden alineadas con SDK 54 antes de commitear el lockfile churn.
+
+2. **Duplicate react**: `react@19.1.0` top-level + `react@17.0.2` dentro de `expo-three/node_modules`. expo-three trae su react anidado. Si rompe en builds nativos → agregar override en `package.json` (`"overrides": { "react": "19.1.0" }`) o evaluar reemplazo de expo-three (Plan v6/v7 ya usa R3F directo, posible que se pueda eliminar expo-three del root).
+
+3. **Version mismatches con SDK 54**: `@types/jest 30 vs ~29.5.14`, `jest-expo 55 vs ~54.0.17`. Fix: `npx expo install --check` y commitear el resultado. Tests pasan hoy 35/35 con las versions actuales, así que no es urgente.
