@@ -20,7 +20,7 @@ export const MuscleCard = React.memo(function MuscleCard({ muscle, onPress }: Mu
   const description = lang === 'es' ? muscle.description_es : muscle.description_en;
 
   return (
-    <AnimatedPressable onPress={onPress} style={styles.card}>
+    <AnimatedPressable onPress={onPress} style={styles.card} testID={`MuscleCard:${muscle.id}`}>
       <View style={styles.glassOverlay} />
       <View style={styles.header}>
         <Text style={styles.name} numberOfLines={1}>{name}</Text>

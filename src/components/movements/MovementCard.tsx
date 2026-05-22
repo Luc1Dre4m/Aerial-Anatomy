@@ -21,7 +21,7 @@ export const MovementCard = React.memo(function MovementCard({ movement, onPress
   const totalMuscles = movement.muscles.length;
 
   return (
-    <AnimatedPressable onPress={onPress} style={styles.card}>
+    <AnimatedPressable onPress={onPress} style={styles.card} testID={`MovementCard:${movement.id}`}>
       <View style={styles.glassOverlay} />
       <View style={styles.header}>
         <Text style={styles.name} numberOfLines={2}>{name}</Text>
