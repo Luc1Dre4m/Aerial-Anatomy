@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,13 +12,20 @@ import { MuscleInfoCard } from '../components/body/MuscleInfoCard';
 import { Anatomy3DTutorial } from '../components/body/Anatomy3DTutorial';
 import { AnimatedTitle } from '../components/ui/AnimatedTitle';
 import { useAppStore } from '../store/useAppStore';
+import { getMuscleById } from '../data/muscles';
+import { useProgress } from '../hooks/useProgress';
 import { colors, typography, spacing } from '../theme';
 
 export function CuerpoScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language as 'es' | 'en';
   const navigation = useNavigation<any>();
   const [selectedMuscleId, setSelectedMuscleId] = useState<string | null>(null);
   const [showSearch, setShowSearch] = useState(false);
+  // Progress + recent chips come from origin/main (StreakBadge sprint).
+  // They live in the same slot as MOTD, shown when no muscle is selected.
+  const recentMuscles = useAppStore((s) => s.recentMuscles);
+  const { totalVisited, totalMuscles, overallRatio } = useProgress();
   // Tutorial overlay 3D — Sprint A2 #4 (junta directiva 2026-05-15, Tomás).
   // El flag vive en el store persistido; una vez marcado, no vuelve a aparecer.
   // Sólo mostrar cuando onboarding ya terminó (evita stack de overlays al
