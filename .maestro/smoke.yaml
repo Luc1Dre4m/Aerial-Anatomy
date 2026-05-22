@@ -40,37 +40,36 @@ appId: com.aerialanatomyapp.aerialanatomia
 
 # 3. CuerpoTab carga sin crash
 #
-# El text 'Cuerpo' es el label de la tab. AnimatedTitle renderiza el
-# título 'Mapa Corporal' en el header del screen.
+# La tab se identifica por id estable (tabBarButtonTestID en
+# BottomTabNavigator.tsx) — locale-independent. El header 'Mapa Corporal'
+# sigue acoplado al idioma ES; ver "Adaptar a EN" en README.
 
 - assertVisible:
-    text: 'Cuerpo'
+    id: 'CuerpoTab'
 - assertVisible: 'Mapa Corporal'
 
 # 4. Navegar a Músculos y entrar al detalle del primero
+#
+# Cards de músculo ahora exponen testID `MuscleCard:<id>`. Usamos
+# m_deltoides (siempre activo en el registro 3D y arriba de la lista).
 
-- tapOn: 'Músculos'
-- assertVisible:
-    id: '.*MusculosScreen.*'
-    optional: true
-# Tap del primer card visible. Maestro no tiene "tap N-th match" estable,
-# así que usamos texto de un músculo que sabemos siempre está activo en el
-# registro y aparece arriba de la lista (Deltoides es base).
-- tapOn: 'Deltoides'
+- tapOn:
+    id: 'MusculosTab'
+- tapOn:
+    id: 'MuscleCard:m_deltoides'
 - assertVisible: 'Origen'
 - back
 
 # 5. Navegar a Movimientos y entrar al detalle del primero
+#
+# Cards de movimiento exponen testID `MovementCard:<id>`. El regex
+# matchea el primer card visible (Maestro toma el primer match cuando
+# hay múltiples).
 
-- tapOn: 'Movimientos'
-- assertVisible:
-    text: 'Movimientos'
-# El primer movimiento que aparece depende del filtro de disciplina.
-# Si el onboarding seleccionó al menos una disciplina, va a haber
-# tarjetas visibles. Tomamos la primera por scroll-into-view + tap.
 - tapOn:
-    text: '.+'
-    index: 3   # las primeras 3 son tab labels o header; la 4ta empieza el contenido
+    id: 'MovimientosTab'
+- tapOn:
+    id: 'MovementCard:.*'
 - assertVisible:
     text: '.*Fase.*|.*Setup.*|.*Vuelo.*'
     optional: true   # algunos movimientos no tienen fases con esos labels
@@ -79,7 +78,8 @@ appId: com.aerialanatomyapp.aerialanatomia
 # 6. Volver a Cuerpo y verificar que el tutorial-3D NO se muestra al
 #    re-entrar (porque ya se marcó completo, o porque clearState=false)
 
-- tapOn: 'Cuerpo'
+- tapOn:
+    id: 'CuerpoTab'
 - assertVisible: 'Mapa Corporal'
 - assertNotVisible:
     text: 'Paso 1 de'   # tutorial overlay step counter
