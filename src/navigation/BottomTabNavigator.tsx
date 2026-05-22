@@ -182,27 +182,27 @@ export function BottomTabNavigator() {
       <Tab.Screen
         name="CuerpoTab"
         component={CuerpoStack}
-        options={{ tabBarLabel: t('tabs.cuerpo') }}
+        options={{ tabBarLabel: t('tabs.cuerpo'), tabBarButtonTestID: 'CuerpoTab' }}
       />
       <Tab.Screen
         name="MusculosTab"
         component={MusculosStack}
-        options={{ tabBarLabel: t('tabs.musculos') }}
+        options={{ tabBarLabel: t('tabs.musculos'), tabBarButtonTestID: 'MusculosTab' }}
       />
       <Tab.Screen
         name="MovimientosTab"
         component={MovimientosStack}
-        options={{ tabBarLabel: t('tabs.movimientos') }}
+        options={{ tabBarLabel: t('tabs.movimientos'), tabBarButtonTestID: 'MovimientosTab' }}
       />
       <Tab.Screen
         name="CadenasTab"
         component={CadenasStack}
-        options={{ tabBarLabel: t('tabs.cadenas') }}
+        options={{ tabBarLabel: t('tabs.cadenas'), tabBarButtonTestID: 'CadenasTab' }}
       />
       <Tab.Screen
         name="EstudioTab"
         component={EstudioStack}
-        options={{ tabBarLabel: t('tabs.estudio') }}
+        options={{ tabBarLabel: t('tabs.estudio'), tabBarButtonTestID: 'EstudioTab' }}
       />
     </Tab.Navigator>
   );
