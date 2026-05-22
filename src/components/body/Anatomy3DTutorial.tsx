@@ -39,7 +39,7 @@ export function Anatomy3DTutorial({ onFinish }: Anatomy3DTutorialProps) {
   }, [onFinish]);
 
   return (
-    <View style={styles.backdrop} pointerEvents="box-none">
+    <View style={styles.backdrop} pointerEvents="box-none" testID="Anatomy3DTutorial">
       <View style={styles.card}>
         <View style={styles.iconCircle}>
           <MaterialCommunityIcons

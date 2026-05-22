@@ -84,5 +84,5 @@ appId: com.aerialanatomyapp.aerialanatomia
 - assertVisible:
     id: 'CuerpoScreen:Header'
 - assertNotVisible:
-    text: 'Paso 1 de'   # tutorial overlay step counter — sin testID todavía
+    id: 'Anatomy3DTutorial'
     optional: true
