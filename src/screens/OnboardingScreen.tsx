@@ -48,7 +48,7 @@ export function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} testID="OnboardingScreen">
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Progress */}
         <View style={styles.progressRow}>
@@ -152,13 +152,18 @@ export function OnboardingScreen() {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={handleNext}
+            activeOpacity={0.7}
+            testID="OnboardingContinueBtn"
+          >
             <Text style={styles.primaryBtnText}>
               {step < TOTAL_STEPS - 1 ? t('onboarding.continue') : t('onboarding.start')}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+          <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} testID="OnboardingSkipBtn">
             <Text style={styles.skipBtnText}>{t('onboarding.skip')}</Text>
           </TouchableOpacity>
         </View>
