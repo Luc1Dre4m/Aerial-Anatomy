@@ -87,12 +87,10 @@ Todos los selectores del flow son **locale-independent** vía `testID` /
 | Origen section | id=`MuscleDetailScreen:OriginSection` | `testID` en local Section component |
 | MovimientosTab | id=`MovimientosTab` | `tabBarButtonTestID` en BottomTabNavigator |
 | Card de movimiento | id regex=`MovementCard:.*` | `testID` en MovementCard (primer match visible) |
-| Tutorial 3D no visible | text=`Paso 1 de` | sin testID todavía — único string traducible que queda |
+| Tutorial 3D no visible | id=`Anatomy3DTutorial` | `testID` en el backdrop del overlay |
 
-El único `text:` que sobrevive es la `assertNotVisible` del tutorial 3D
-(step counter). No bloquea ejecución EN porque `optional: true`. Si
-algún día se agrega `testID` al overlay del tutorial, se cierra el
-último acople.
+El YAML ya no contiene ningún `text:` matcher de UI traducible. El flow
+es 100% locale-independent.
 
 ## Adaptar a EN
 
@@ -117,8 +115,9 @@ estimado: ~10 min por run, sólo en PRs a main.
       y a OnboardingScreen. (2026-05-21: AnimatedTitle acepta `testID`,
       OnboardingScreen tagged, Section interna de MuscleDetailScreen
       acepta testID, flow EN-ready sin cambios)
-- [ ] Agregar `testID` al overlay del tutorial 3D para cerrar la
-      última `text:` assertion del flow.
+- [x] Agregar `testID` al overlay del tutorial 3D. (2026-05-21:
+      Anatomy3DTutorial backdrop tagged 'Anatomy3DTutorial', flow
+      100% locale-independent)
 - [ ] Extender el flow con: tap en una cadena biomecánica (CadenasTab,
       premium), verificar paywall si no premium.
 - [ ] Workflow GitHub Actions.
