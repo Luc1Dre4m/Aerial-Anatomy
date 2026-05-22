@@ -73,39 +73,31 @@ screenshots de cada step en `~/.maestro/tests/<timestamp>/`.
 
 ## Selectores que el flow asume
 
-| Acción | Selector | Por qué |
-|---|---|---|
-| Skip onboarding | text=`Bienvenida` | Heading del primer slide — sigue acoplado a ES |
-| CuerpoTab | id=`CuerpoTab` | `tabBarButtonTestID` en BottomTabNavigator — locale-independent |
-| Header de Cuerpo | text=`Mapa Corporal` | screens.cuerpo.title — acoplado a ES |
-| MusculosTab | id=`MusculosTab` | `tabBarButtonTestID` — locale-independent |
-| Card de músculo | id=`MuscleCard:m_deltoides` | `testID` en MuscleCard — locale-independent, id estable del registro |
-| Header MuscleDetail | text=`Origen` | section heading — acoplado a ES |
-| MovimientosTab | id=`MovimientosTab` | `tabBarButtonTestID` — locale-independent |
-| Card de movimiento | id regex=`MovementCard:.*` | `testID` en MovementCard — primer match visible |
-| Header MovementDetail | text matching fase | fase Setup/Vuelo/etc — depende del movimiento, acoplado a ES |
+Todos los selectores del flow son **locale-independent** vía `testID` /
+`tabBarButtonTestID`. El YAML no contiene strings traducibles del UI.
 
-Tabs y cards ahora son inmunes a cambios de idioma o de copy. Lo que
-sigue acoplado a ES: onboarding y headers de pantalla — ver siguiente
-sección.
+| Acción | Selector | Definido en |
+|---|---|---|
+| Detectar onboarding | id=`OnboardingScreen` | SafeAreaView root de OnboardingScreen |
+| Skip onboarding (1 tap) | id=`OnboardingSkipBtn` | botón skip de OnboardingScreen |
+| CuerpoTab | id=`CuerpoTab` | `tabBarButtonTestID` en BottomTabNavigator |
+| Header de Cuerpo | id=`CuerpoScreen:Header` | `testID` en AnimatedTitle de CuerpoScreen |
+| MusculosTab | id=`MusculosTab` | `tabBarButtonTestID` en BottomTabNavigator |
+| Card de músculo | id=`MuscleCard:m_deltoides` | `testID` en MuscleCard (id estable del registro) |
+| Origen section | id=`MuscleDetailScreen:OriginSection` | `testID` en local Section component |
+| MovimientosTab | id=`MovimientosTab` | `tabBarButtonTestID` en BottomTabNavigator |
+| Card de movimiento | id regex=`MovementCard:.*` | `testID` en MovementCard (primer match visible) |
+| Tutorial 3D no visible | text=`Paso 1 de` | sin testID todavía — único string traducible que queda |
+
+El único `text:` que sobrevive es la `assertNotVisible` del tutorial 3D
+(step counter). No bloquea ejecución EN porque `optional: true`. Si
+algún día se agrega `testID` al overlay del tutorial, se cierra el
+último acople.
 
 ## Adaptar a EN
 
-Tras la migración a `testID`, solo quedan acoplados al idioma:
-
-| ES | EN |
-|---|---|
-| Bienvenida | Welcome |
-| Continuar | Continue |
-| Mapa Corporal | Body Map |
-| Origen | Origin |
-
-Para correr el flow en un device EN, reemplazar esos strings en el
-YAML. Las tabs y cards funcionan en cualquier idioma sin tocar nada.
-
-Próximo paso para terminar de desacoplar: agregar `testID` a los
-headers de `CuerpoScreen` y `MuscleDetailScreen`, y a los botones de
-onboarding (`OnboardingScreen`).
+**Ya no hace falta** modificar el YAML para correr el flow en un device
+con UI en inglés. Tabs, cards, headers y onboarding usan id estables.
 
 ## CI / GitHub Actions
 
@@ -121,8 +113,12 @@ estimado: ~10 min por run, sólo en PRs a main.
 - [x] Agregar `testID` a las cards de músculos/movimientos para
       desacoplar del idioma. (2026-05-21: `tabBarButtonTestID` en tabs
       + `testID` en MuscleCard/MovementCard, flow ya usa `id`)
-- [ ] Agregar `testID` a headers (`CuerpoScreen`, `MuscleDetailScreen`)
-      y a OnboardingScreen para cerrar el desacople de idioma.
+- [x] Agregar `testID` a headers (`CuerpoScreen`, `MuscleDetailScreen`)
+      y a OnboardingScreen. (2026-05-21: AnimatedTitle acepta `testID`,
+      OnboardingScreen tagged, Section interna de MuscleDetailScreen
+      acepta testID, flow EN-ready sin cambios)
+- [ ] Agregar `testID` al overlay del tutorial 3D para cerrar la
+      última `text:` assertion del flow.
 - [ ] Extender el flow con: tap en una cadena biomecánica (CadenasTab,
       premium), verificar paywall si no premium.
 - [ ] Workflow GitHub Actions.
