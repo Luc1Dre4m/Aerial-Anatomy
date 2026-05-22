@@ -75,34 +75,37 @@ screenshots de cada step en `~/.maestro/tests/<timestamp>/`.
 
 | Acción | Selector | Por qué |
 |---|---|---|
-| Skip onboarding | text=`Bienvenida` | Heading del primer slide |
-| CuerpoTab | text=`Cuerpo` | tabBarLabel desde i18n `tabs.cuerpo` |
-| Header de Cuerpo | text=`Mapa Corporal` | screens.cuerpo.title |
-| MusculosTab | text=`Músculos` | tabs.musculos |
-| Card de músculo | text=`Deltoides` | nombre real en la lista, siempre presente |
-| Header MuscleDetail | text=`Origen` | section heading de MuscleDetailScreen |
-| MovimientosTab | text=`Movimientos` | tabs.movimientos |
-| Header MovementDetail | text matching fase | fase Setup/Vuelo/etc — depende del movimiento |
+| Skip onboarding | text=`Bienvenida` | Heading del primer slide — sigue acoplado a ES |
+| CuerpoTab | id=`CuerpoTab` | `tabBarButtonTestID` en BottomTabNavigator — locale-independent |
+| Header de Cuerpo | text=`Mapa Corporal` | screens.cuerpo.title — acoplado a ES |
+| MusculosTab | id=`MusculosTab` | `tabBarButtonTestID` — locale-independent |
+| Card de músculo | id=`MuscleCard:m_deltoides` | `testID` en MuscleCard — locale-independent, id estable del registro |
+| Header MuscleDetail | text=`Origen` | section heading — acoplado a ES |
+| MovimientosTab | id=`MovimientosTab` | `tabBarButtonTestID` — locale-independent |
+| Card de movimiento | id regex=`MovementCard:.*` | `testID` en MovementCard — primer match visible |
+| Header MovementDetail | text matching fase | fase Setup/Vuelo/etc — depende del movimiento, acoplado a ES |
 
-Si la app cambia esos strings, el flow rompe — actualizar en
-`smoke.yaml` y en esta tabla.
+Tabs y cards ahora son inmunes a cambios de idioma o de copy. Lo que
+sigue acoplado a ES: onboarding y headers de pantalla — ver siguiente
+sección.
 
 ## Adaptar a EN
 
-El flow está escrito en español. Para EN reemplazar:
+Tras la migración a `testID`, solo quedan acoplados al idioma:
 
 | ES | EN |
 |---|---|
-| Cuerpo | Body |
+| Bienvenida | Welcome |
+| Continuar | Continue |
 | Mapa Corporal | Body Map |
-| Músculos | Muscles |
-| Movimientos | Movements |
-| Deltoides | Deltoid |
 | Origen | Origin |
 
-Mejor opción a futuro: agregar `testID` props a las tabs y cards clave,
-y matchear por id (`id: 'CuerpoTab'`) en vez de text. Eso evita el
-acople con el idioma de la UI.
+Para correr el flow en un device EN, reemplazar esos strings en el
+YAML. Las tabs y cards funcionan en cualquier idioma sin tocar nada.
+
+Próximo paso para terminar de desacoplar: agregar `testID` a los
+headers de `CuerpoScreen` y `MuscleDetailScreen`, y a los botones de
+onboarding (`OnboardingScreen`).
 
 ## CI / GitHub Actions
 
@@ -115,8 +118,11 @@ estimado: ~10 min por run, sólo en PRs a main.
 
 - [ ] Primera corrida local (Android emulator). Pegar output exitoso en
       `agent_docs/followups/pending.md` Sprint A2 #7.
-- [ ] Agregar `testID` a las cards de músculos/movimientos para
-      desacoplar del idioma.
+- [x] Agregar `testID` a las cards de músculos/movimientos para
+      desacoplar del idioma. (2026-05-21: `tabBarButtonTestID` en tabs
+      + `testID` en MuscleCard/MovementCard, flow ya usa `id`)
+- [ ] Agregar `testID` a headers (`CuerpoScreen`, `MuscleDetailScreen`)
+      y a OnboardingScreen para cerrar el desacople de idioma.
 - [ ] Extender el flow con: tap en una cadena biomecánica (CadenasTab,
       premium), verificar paywall si no premium.
 - [ ] Workflow GitHub Actions.
